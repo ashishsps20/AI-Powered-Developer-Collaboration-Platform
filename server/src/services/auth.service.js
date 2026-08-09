@@ -1,19 +1,7 @@
 import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { signAccessToken } from '../utils/token.js';
-
-function sanitizeUser(user) {
-  return {
-    id: user._id.toString(),
-    name: user.name,
-    email: user.email,
-    role: user.role,
-    avatarUrl: user.avatarUrl,
-    isActive: user.isActive,
-    createdAt: user.createdAt,
-    updatedAt: user.updatedAt,
-  };
-}
+import { serializeUser } from '../utils/userSerializer.js';
 
 export async function registerUser({ name, email, password, role }) {
   const existing = await User.findOne({ email });

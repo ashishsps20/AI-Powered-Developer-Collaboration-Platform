@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
-import { PLATFORM_ROLES } from '../utils/ApiError.js';
+import { PLATFORM_ROLES } from '../utils/constants.js';
 
 const userSchema = new mongoose.Schema(
   {
@@ -24,20 +24,24 @@ const userSchema = new mongoose.Schema(
       minlength: 8,
       select: false,
     },
+    avatar: {
+      type: String,
+      default: '',
+    },
     role: {
       type: String,
       enum: PLATFORM_ROLES,
       default: 'DEVELOPER',
     },
-    avatarUrl: {
-      type: String,
-      default: '',
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
     isActive: {
       type: Boolean,
       default: true,
     },
-    lastLoginAt: {
+    lastSeen: {
       type: Date,
     },
   },

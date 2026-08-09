@@ -1,10 +1,10 @@
+import { User } from '../models/User.js';
 import { ApiError } from '../utils/ApiError.js';
 import { verifyAccessToken } from '../utils/token.js';
 import { getTokenFromRequest } from '../utils/authCookie.js';
-import { User } from '../models/User.js';
 import { asyncHandler } from '../utils/asyncHandler.js';
 
-export const authenticate = asyncHandler(async (req, _res, next) => {
+export const requireAuth = asyncHandler(async (req, _res, next) => {
   const token = getTokenFromRequest(req);
   if (!token) {
     throw new ApiError(401, 'Authentication required');
@@ -34,7 +34,7 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
   next();
 });
 
-export function authorize(...roles) {
+export function requireRole(...roles) {
   return (req, _res, next) => {
     if (!req.user) {
       return next(new ApiError(401, 'Authentication required'));
@@ -45,3 +45,6 @@ export function authorize(...roles) {
     next();
   };
 }
+
+export const authenticate = requireAuth;
+export const authorize = requireRole;
