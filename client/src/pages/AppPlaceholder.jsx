@@ -1,9 +1,15 @@
 import React from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import useAuthStore from '../store/authStore';
+import { useNavigate } from 'react-router-dom';
 
 const AppPlaceholder = () => {
-  const location = useLocation();
-  const user = location.state?.user || { name: 'User' };
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/login');
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-12 sm:px-6 lg:px-8">
@@ -14,8 +20,10 @@ const AppPlaceholder = () => {
           </svg>
         </div>
         
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome back, {user.name}.</h2>
-        <p className="text-green-600 font-medium mb-6">Authentication successful.</p>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome back, {user?.name}</h2>
+        <p className="text-gray-600 mb-2">Email: {user?.email}</p>
+        <p className="text-gray-600 mb-2">Platform role: <span className="font-semibold">{user?.platformRole}</span></p>
+        <p className="text-green-600 font-medium mb-6">Authentication status: Authenticated</p>
         
         <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-md text-sm text-yellow-800 text-left mb-6">
           <p className="font-semibold mb-1">Placeholder Dashboard</p>
@@ -24,12 +32,12 @@ const AppPlaceholder = () => {
           </p>
         </div>
 
-        <Link 
-          to="/" 
+        <button 
+          onClick={handleLogout}
           className="w-full flex justify-center py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none"
         >
-          Return Home
-        </Link>
+          Logout
+        </button>
       </div>
     </div>
   );

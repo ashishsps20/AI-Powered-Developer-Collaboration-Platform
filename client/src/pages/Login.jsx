@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import LoginForm from '../components/auth/LoginForm';
 import authService from '../services/authService';
+import useAuthStore from '../store/authStore';
 
 const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
   const navigate = useNavigate();
+  const { setUser } = useAuthStore();
 
   const handleLogin = async (data) => {
     setIsLoading(true);
@@ -15,10 +17,8 @@ const Login = () => {
     try {
       const response = await authService.loginUser(data);
       // Backend returns HTTP 200 on success, and sets HTTP-only cookie
-      navigate('/app', { 
-        state: { user: response.data.user },
-        replace: true 
-      });
+      setUser(response.data.user);
+      navigate('/app', { replace: true });
     } catch (error) {
       if (error.message) {
         setServerError(error.message);

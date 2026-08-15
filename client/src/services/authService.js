@@ -35,6 +35,28 @@ const authService = {
       }
     }
   },
+  getCurrentUser: async () => {
+    try {
+      const response = await api.get('/auth/me');
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw error.response.data;
+      }
+      throw { success: false, message: 'Unable to connect to the server.' };
+    }
+  },
+  logoutUser: async () => {
+    try {
+      const response = await api.post('/auth/logout');
+      return response.data;
+    } catch (error) {
+      if (error.response) {
+        throw error.response.data;
+      }
+      throw { success: false, message: 'Unable to connect to the server.' };
+    }
+  },
 };
 
 export default authService;
