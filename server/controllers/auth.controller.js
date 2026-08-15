@@ -1,5 +1,5 @@
 import authService from '../services/auth.service.js';
-import { registerValidator } from '../validators/auth.validator.js';
+import { registerValidator, loginValidator } from '../validators/auth.validator.js';
 
 class AuthController {
   async register(req, res, next) {
@@ -35,6 +35,46 @@ class AuthController {
         });
       }
       // Otherwise, pass to centralized error handler
+      next(err);
+    }
+  }
+
+  async login(req, res, next) {
+    try {
+      const { error, value } = loginValidator.validate(req.body, { abortEarly: false });
+      
+      if (error) {
+        return res.status(400).json({
+          success: false,
+          message: error.details[0].message,
+        });
+      }
+
+      const { user, token } = await authService.loginUser(value);
+
+      // Set HTTP-only cookie
+      res.cookie('jwt', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 15 * 60 * 1000, // 15 minutes to match example JWT_EXPIRES_IN=15m
+        path: '/'
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Login successful',
+        data: {
+          user,
+        },
+      });
+    } catch (err) {
+      if (err.statusCode === 401) {
+        return res.status(401).json({
+          success: false,
+          message: err.message,
+        });
+      }
       next(err);
     }
   }

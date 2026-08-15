@@ -1,5 +1,6 @@
 import User from '../models/User.js';
 import bcrypt from 'bcrypt';
+import generateToken from '../utils/generateToken.js';
 
 class AuthService {
   async registerUser(data) {
@@ -47,6 +48,48 @@ class AuthService {
       }
       throw error;
     }
+  }
+
+  async loginUser(data) {
+    const { email, password } = data;
+    
+    const normalizedEmail = email.toLowerCase().trim();
+
+    // Find user and explicitly select password for comparison
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
+    
+    if (!user) {
+      const error = new Error('Invalid email or password');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // Compare password
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      const error = new Error('Invalid email or password');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // Check if account is active
+    if (!user.isActive) {
+      const error = new Error('Account is disabled');
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // Generate token
+    const token = generateToken(user._id, user.platformRole);
+
+    // Prepare safe user object
+    const userObject = user.toObject();
+    delete userObject.password;
+    userObject.id = userObject._id;
+    delete userObject._id;
+    delete userObject.__v;
+
+    return { user: userObject, token };
   }
 }
 

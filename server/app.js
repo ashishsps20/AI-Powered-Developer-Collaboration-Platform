@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
+import cookieParser from 'cookie-parser';
 
 import routes from './routes/index.js';
 import notFoundHandler from './middleware/notFoundHandler.js';
@@ -9,14 +10,13 @@ import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
 
-// Security Middleware
+// Security Middlewares
 app.use(helmet());
-
-// CORS Configuration
 app.use(cors({
   origin: process.env.CLIENT_URL || 'http://localhost:5173',
   credentials: true
 }));
+app.use(cookieParser());
 
 // Rate Limiting
 const limiter = rateLimit({

@@ -2,6 +2,7 @@ import request from 'supertest';
 import app from '../app.js';
 import User from '../models/User.js';
 import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
 import './setup.js';
 
 describe('Auth Registration API', () => {
@@ -129,5 +130,139 @@ describe('Auth Registration API', () => {
     
     // No organization fields exist on the user model response
     expect(res.body.data.user.organizationId).toBeUndefined();
+  });
+});
+
+describe('Auth Login API', () => {
+  const validUser = {
+    name: 'Ashish Gautam',
+    email: 'ashish.login@example.com',
+    password: 'password123',
+  };
+
+  beforeEach(async () => {
+    // Create a fresh user before each test so we can safely manipulate it
+    await request(app).post('/api/auth/register').send({
+      ...validUser,
+      confirmPassword: validUser.password
+    });
+  });
+
+  it('Test 1: Valid email/password should return 200', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email,
+      password: validUser.password
+    });
+    
+    expect(res.statusCode).toEqual(200);
+    expect(res.body.success).toBe(true);
+    expect(res.body.message).toBe('Login successful');
+    expect(res.body.data.user.email).toBe(validUser.email);
+  });
+
+  it('Test 2: Wrong password should return 401', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email,
+      password: 'wrongpassword'
+    });
+    
+    expect(res.statusCode).toEqual(401);
+    expect(res.body.message).toBe('Invalid email or password');
+  });
+
+  it('Test 3: Unknown email should return 401', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: 'unknown@example.com',
+      password: 'password123'
+    });
+    
+    expect(res.statusCode).toEqual(401);
+    expect(res.body.message).toBe('Invalid email or password');
+  });
+
+  it('Test 4: Missing email should return 400', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      password: 'password123'
+    });
+    
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.message).toBe('Email is required');
+  });
+
+  it('Test 5: Missing password should return 400', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email
+    });
+    
+    expect(res.statusCode).toEqual(400);
+    expect(res.body.message).toBe('Password is required');
+  });
+
+  it('Test 6: Inactive user should return 401', async () => {
+    // Disable user
+    await User.updateOne({ email: validUser.email }, { isActive: false });
+    
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email,
+      password: validUser.password
+    });
+    
+    expect(res.statusCode).toEqual(401);
+    expect(res.body.message).toBe('Account is disabled');
+  });
+
+  it('Test 7: JWT cookie exists after successful login', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email,
+      password: validUser.password
+    });
+    
+    expect(res.headers['set-cookie']).toBeDefined();
+    const cookie = res.headers['set-cookie'][0];
+    expect(cookie).toMatch(/^jwt=/);
+  });
+
+  it('Test 8: Cookie is HTTP-only', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email,
+      password: validUser.password
+    });
+    
+    const cookie = res.headers['set-cookie'][0];
+    expect(cookie).toMatch(/HttpOnly/);
+  });
+
+  it('Test 9: Password is not returned in response', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email,
+      password: validUser.password
+    });
+    
+    expect(res.body.data.user.password).toBeUndefined();
+    expect(res.body.data.user.passwordHash).toBeUndefined();
+  });
+
+  it('Test 10: JWT payload does not contain sensitive data', async () => {
+    const res = await request(app).post('/api/auth/login').send({
+      email: validUser.email,
+      password: validUser.password
+    });
+    
+    const cookie = res.headers['set-cookie'][0];
+    const token = cookie.split(';')[0].replace('jwt=', '');
+    
+    // Decode token
+    const decoded = jwt.decode(token);
+    
+    // Check that it ONLY has expected safe claims
+    expect(decoded.sub).toBeDefined();
+    expect(decoded.platformRole).toBeDefined();
+    expect(decoded.iat).toBeDefined();
+    expect(decoded.exp).toBeDefined();
+    
+    // Check that it does NOT have sensitive data
+    expect(decoded.password).toBeUndefined();
+    expect(decoded.email).toBeUndefined();
+    expect(decoded.name).toBeUndefined();
   });
 });
