@@ -4,9 +4,11 @@ import ApplicationShell from './layouts/ApplicationShell';
 import Home from './pages/Home';
 
 import Register from './pages/Register';
-import Onboarding from './pages/Onboarding';
 import Login from './pages/Login';
-import AppPlaceholder from './pages/AppPlaceholder';
+import Onboarding from './pages/Onboarding';
+import CreateOrganization from './pages/CreateOrganization';
+import WorkspaceSelection from './pages/WorkspaceSelection';
+import OrganizationDashboard from './pages/OrganizationDashboard';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import useAuthStore from './store/authStore';
 import { useEffect } from 'react';
@@ -36,12 +38,47 @@ function App() {
       </Route>
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
-      <Route path="/onboarding" element={<Onboarding />} />
+      
+      {/* Protected Routes */}
+      <Route 
+        path="/onboarding" 
+        element={
+          <ProtectedRoute>
+            <Onboarding />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/onboarding/create-organization" 
+        element={
+          <ProtectedRoute>
+            <CreateOrganization />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/app" 
+        element={
+          <ProtectedRoute>
+            <WorkspaceSelection />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/app/org/:organizationId/dashboard" 
+        element={
+          <ProtectedRoute>
+            <OrganizationDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      
+      {/* Redirect all /app/* fallbacks to /app for workspace selection */}
       <Route 
         path="/app/*" 
         element={
           <ProtectedRoute>
-            <AppPlaceholder />
+            <WorkspaceSelection />
           </ProtectedRoute>
         } 
       />
