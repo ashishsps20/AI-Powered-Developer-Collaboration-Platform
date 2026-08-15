@@ -136,6 +136,56 @@ class OrganizationService {
       isActive: true,
     }).lean();
   }
+
+  async getMembers(organizationId) {
+    const memberships = await OrganizationMember.find({ 
+      organization: organizationId,
+      isActive: true
+    })
+      .populate('user', 'name email avatar')
+      .lean();
+
+    return memberships.map(m => ({
+      id: m.user._id,
+      user: {
+        id: m.user._id,
+        name: m.user.name,
+        email: m.user.email,
+        avatar: m.user.avatar || null
+      },
+      role: m.role,
+      joinedAt: m.createdAt
+    }));
+  }
+
+  async removeMember(organizationId, userIdToRemove) {
+    if (!mongoose.Types.ObjectId.isValid(userIdToRemove)) {
+      const error = new Error('Invalid user ID');
+      error.statusCode = 400;
+      throw error;
+    }
+
+    const membership = await OrganizationMember.findOne({
+      organization: organizationId,
+      user: userIdToRemove
+    });
+
+    if (!membership) {
+      const error = new Error('User is not a member of this organization');
+      error.statusCode = 404;
+      throw error;
+    }
+
+    if (membership.role === 'OWNER') {
+      const error = new Error('The organization owner cannot be removed');
+      error.statusCode = 403;
+      throw error;
+    }
+
+    await OrganizationMember.deleteOne({ _id: membership._id });
+
+    return true;
+  }
 }
 
 export default new OrganizationService();

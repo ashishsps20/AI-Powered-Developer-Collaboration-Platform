@@ -73,6 +73,43 @@ class OrganizationController {
       next(err);
     }
   }
+
+  async getMembers(req, res, next) {
+    try {
+      const { organizationId } = req.params;
+      const members = await organizationService.getMembers(organizationId);
+
+      res.status(200).json({
+        success: true,
+        data: {
+          members,
+        },
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async removeMember(req, res, next) {
+    try {
+      const { organizationId, userId } = req.params;
+      
+      await organizationService.removeMember(organizationId, userId);
+
+      res.status(200).json({
+        success: true,
+        message: 'Member removed successfully'
+      });
+    } catch (err) {
+      if (err.statusCode) {
+        return res.status(err.statusCode).json({
+          success: false,
+          message: err.message
+        });
+      }
+      next(err);
+    }
+  }
 }
 
 export default new OrganizationController();
