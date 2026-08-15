@@ -78,6 +78,38 @@ class AuthController {
       next(err);
     }
   }
+
+  async getCurrentUser(req, res, next) {
+    try {
+      res.status(200).json({
+        success: true,
+        data: {
+          user: req.user
+        }
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
+
+  async logout(req, res, next) {
+    try {
+      res.cookie('jwt', '', {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 0, // Clear the cookie instantly
+        path: '/'
+      });
+
+      res.status(200).json({
+        success: true,
+        message: 'Logged out successfully'
+      });
+    } catch (err) {
+      next(err);
+    }
+  }
 }
 
 export default new AuthController();
