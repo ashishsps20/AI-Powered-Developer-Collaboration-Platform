@@ -1,11 +1,11 @@
-const express = require('express');
-const cors = require('cors');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
+import express from 'express';
+import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 
-const routes = require('./routes');
-const notFoundHandler = require('./middleware/notFoundHandler');
-const errorHandler = require('./middleware/errorHandler');
+import routes from './routes/index.js';
+import notFoundHandler from './middleware/notFoundHandler.js';
+import errorHandler from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -33,8 +33,11 @@ app.use('/api', limiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+import authRoutes from './routes/auth.routes.js';
+
 // Routes
 app.use('/api', routes);
+app.use('/api/auth', authRoutes);
 
 // Root endpoint
 app.get('/', (req, res) => {
@@ -50,4 +53,4 @@ app.use(notFoundHandler);
 // Centralized Error Handler
 app.use(errorHandler);
 
-module.exports = app;
+export default app;
