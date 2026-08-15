@@ -5,6 +5,8 @@ import Home from './pages/Home';
 
 import Register from './pages/Register';
 import Onboarding from './pages/Onboarding';
+import Login from './pages/Login';
+import AppPlaceholder from './pages/AppPlaceholder';
 
 function App() {
   return (
@@ -15,7 +17,9 @@ function App() {
         <Route path="health-test" element={<Home />} />
       </Route>
       <Route path="/register" element={<Register />} />
+      <Route path="/login" element={<Login />} />
       <Route path="/onboarding" element={<Onboarding />} />
+      <Route path="/app" element={<AppPlaceholder />} />
     </Routes>
   );
 }
