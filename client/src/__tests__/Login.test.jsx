@@ -58,11 +58,11 @@ describe('Login Page', () => {
   });
 
   it('5 & 7 & 10. successful login shows loading and navigates to app', async () => {
-    authService.loginUser.mockResolvedValueOnce({
+    authService.loginUser.mockImplementationOnce(() => new Promise(resolve => setTimeout(() => resolve({
       success: true,
       message: 'Login successful',
       data: { user: { name: 'Ashish' } }
-    });
+    }), 50)));
 
     renderLogin();
     
@@ -73,8 +73,9 @@ describe('Login Page', () => {
     fireEvent.click(submitBtn);
 
     // 7. Loading state check
-    expect(screen.getByRole('button', { name: /logging in\.\.\./i })).toBeInTheDocument();
-    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /logging in\.\.\./i })).toBeInTheDocument();
+    });
     await waitFor(() => {
       expect(authService.loginUser).toHaveBeenCalledWith({
         email: 'ashish@example.com',

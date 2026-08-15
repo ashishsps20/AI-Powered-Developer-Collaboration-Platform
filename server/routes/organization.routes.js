@@ -22,6 +22,7 @@ router.get('/:organizationId', requireOrganizationMember, organizationController
 router.get('/:organizationId/members', requireOrganizationMember, organizationController.getMembers);
 
 // Owner only routes
+router.get('/:organizationId/invitations', requireOrganizationMember, requireOrganizationOwner, invitationController.getOrganizationInvitations);
 router.post('/:organizationId/invitations', requireOrganizationMember, requireOrganizationOwner, invitationController.createInvitation);
 router.delete('/:organizationId/invitations/:invitationId', requireOrganizationMember, requireOrganizationOwner, invitationController.cancelInvitation);
 router.delete('/:organizationId/members/:userId', requireOrganizationMember, requireOrganizationOwner, organizationController.removeMember);

@@ -83,11 +83,11 @@ describe('Register Page', () => {
   });
 
   it('6 & 9 & 10. successful registration shows loading and navigates to onboarding', async () => {
-    authService.registerUser.mockResolvedValueOnce({
+    authService.registerUser.mockImplementationOnce(() => new Promise(resolve => setTimeout(() => resolve({
       success: true,
       message: 'Account created successfully',
       data: { user: { id: '123' } }
-    });
+    }), 50)));
 
     renderRegister();
     
@@ -100,8 +100,9 @@ describe('Register Page', () => {
     fireEvent.click(submitBtn);
 
     // 9. Loading state check
-    expect(screen.getByRole('button', { name: /creating account\.\.\./i })).toBeInTheDocument();
-    
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: /creating account\.\.\./i })).toBeInTheDocument();
+    });
     await waitFor(() => {
       expect(authService.registerUser).toHaveBeenCalledWith({
         name: 'Ashish Gautam',

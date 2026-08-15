@@ -9,6 +9,10 @@ import Onboarding from './pages/Onboarding';
 import CreateOrganization from './pages/CreateOrganization';
 import WorkspaceSelection from './pages/WorkspaceSelection';
 import OrganizationDashboard from './pages/OrganizationDashboard';
+import OrganizationMembers from './pages/OrganizationMembers';
+import OrganizationInvitations from './pages/OrganizationInvitations';
+import UserInvitations from './pages/UserInvitations';
+import AcceptInvitation from './pages/AcceptInvitation';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import useAuthStore from './store/authStore';
 import { useEffect } from 'react';
@@ -38,6 +42,7 @@ function App() {
       </Route>
       <Route path="/register" element={<Register />} />
       <Route path="/login" element={<Login />} />
+      <Route path="/accept-invitation" element={<AcceptInvitation />} />
       
       {/* Protected Routes */}
       <Route 
@@ -69,6 +74,30 @@ function App() {
         element={
           <ProtectedRoute>
             <OrganizationDashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/app/org/:organizationId/members" 
+        element={
+          <ProtectedRoute>
+            <OrganizationMembers />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/app/org/:organizationId/invitations" 
+        element={
+          <ProtectedRoute>
+            <OrganizationInvitations />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/app/invitations" 
+        element={
+          <ProtectedRoute>
+            <UserInvitations />
           </ProtectedRoute>
         } 
       />

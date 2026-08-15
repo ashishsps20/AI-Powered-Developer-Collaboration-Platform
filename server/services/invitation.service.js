@@ -72,16 +72,26 @@ class InvitationService {
       email: invitation.email,
       status: invitation.status,
       expiresAt: invitation.expiresAt,
-      role: invitation.role
+      role: invitation.role,
+      rawToken: process.env.NODE_ENV !== 'production' ? rawToken : undefined
     };
   }
 
-  async checkAndGetInvitation(rawToken, currentUserEmail) {
-    const tokenHash = this.hashToken(rawToken);
-    
-    const invitation = await OrganizationInvitation.findOne({ tokenHash })
-      .populate('organization')
-      .populate('invitedBy', 'name');
+  async checkAndGetInvitation(tokenOrId, currentUserEmail) {
+    let invitation;
+
+    // Check if tokenOrId is a valid MongoDB ObjectId (coming from dashboard)
+    if (mongoose.Types.ObjectId.isValid(tokenOrId)) {
+      invitation = await OrganizationInvitation.findById(tokenOrId)
+        .populate('organization')
+        .populate('invitedBy', 'name');
+    } else {
+      // Otherwise assume it's a raw token from the email link
+      const tokenHash = this.hashToken(tokenOrId);
+      invitation = await OrganizationInvitation.findOne({ tokenHash })
+        .populate('organization')
+        .populate('invitedBy', 'name');
+    }
 
     if (!invitation) {
       const error = new Error('Invalid invitation token');
@@ -133,8 +143,8 @@ class InvitationService {
     return invitation;
   }
 
-  async acceptInvitation(userId, currentUserEmail, rawToken) {
-    const invitation = await this.checkAndGetInvitation(rawToken, currentUserEmail);
+  async acceptInvitation(userId, currentUserEmail, tokenOrId) {
+    const invitation = await this.checkAndGetInvitation(tokenOrId, currentUserEmail);
 
     // Verify user is not already a member
     const existingMember = await OrganizationMember.findOne({
@@ -206,8 +216,8 @@ class InvitationService {
     }
   }
 
-  async rejectInvitation(currentUserEmail, rawToken) {
-    const invitation = await this.checkAndGetInvitation(rawToken, currentUserEmail);
+  async rejectInvitation(currentUserEmail, tokenOrId) {
+    const invitation = await this.checkAndGetInvitation(tokenOrId, currentUserEmail);
 
     invitation.status = 'REJECTED';
     invitation.rejectedAt = new Date();
@@ -252,6 +262,38 @@ class InvitationService {
       },
       role: inv.role,
       expiresAt: inv.expiresAt
+    }));
+  }
+
+  async getOrganizationInvitations(organizationId) {
+    const invitations = await OrganizationInvitation.find({
+      organization: organizationId,
+      status: 'PENDING',
+    }).populate('invitedBy', 'name');
+
+    // Filter out expired ones and update them in background
+    const validInvitations = [];
+    const now = new Date();
+
+    for (const inv of invitations) {
+      if (now > inv.expiresAt) {
+        inv.status = 'EXPIRED';
+        await inv.save();
+      } else {
+        validInvitations.push(inv);
+      }
+    }
+
+    return validInvitations.map(inv => ({
+      id: inv._id,
+      email: inv.email,
+      invitedBy: {
+        id: inv.invitedBy._id,
+        name: inv.invitedBy.name
+      },
+      role: inv.role,
+      expiresAt: inv.expiresAt,
+      createdAt: inv.createdAt
     }));
   }
 

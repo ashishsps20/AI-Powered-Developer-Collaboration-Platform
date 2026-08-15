@@ -74,17 +74,26 @@ const OrganizationDashboard = () => {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
           <div className="bg-gray-50 p-6 rounded-lg border">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Role</h3>
             <span className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
               {currentRole}
             </span>
           </div>
-          <div className="bg-gray-50 p-6 rounded-lg border">
+          
+          <Link to={`/app/org/${organizationId}/members`} className="bg-gray-50 p-6 rounded-lg border hover:bg-gray-100 transition-colors block text-left">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Members</h3>
-            <p className="text-gray-500 italic">Coming soon</p>
-          </div>
+            <p className="text-gray-500 text-sm">View and manage organization members.</p>
+          </Link>
+          
+          {currentRole === 'OWNER' && (
+            <Link to={`/app/org/${organizationId}/invitations`} className="bg-gray-50 p-6 rounded-lg border hover:bg-gray-100 transition-colors block text-left">
+              <h3 className="text-lg font-medium text-gray-900 mb-2">Pending Invitations</h3>
+              <p className="text-gray-500 text-sm">View and manage pending organization invitations.</p>
+            </Link>
+          )}
+
           <div className="bg-gray-50 p-6 rounded-lg border">
             <h3 className="text-lg font-medium text-gray-900 mb-2">Projects</h3>
             <p className="text-gray-500 italic">Coming soon</p>

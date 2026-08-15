@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import LoginForm from '../components/auth/LoginForm';
 import authService from '../services/authService';
 import useAuthStore from '../store/authStore';
@@ -8,7 +8,15 @@ const Login = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [serverError, setServerError] = useState(null);
   const navigate = useNavigate();
-  const { setUser } = useAuthStore();
+  const location = useLocation();
+  const { setUser, isAuthenticated, isInitialized } = useAuthStore();
+
+  React.useEffect(() => {
+    if (isInitialized && isAuthenticated) {
+      const from = location.state?.from || '/app';
+      navigate(from, { replace: true });
+    }
+  }, [isInitialized, isAuthenticated, navigate, location]);
 
   const handleLogin = async (data) => {
     setIsLoading(true);
@@ -16,9 +24,10 @@ const Login = () => {
 
     try {
       const response = await authService.loginUser(data);
-      // Backend returns HTTP 200 on success, and sets HTTP-only cookie
       setUser(response.data.user);
-      navigate('/app', { replace: true });
+      
+      const from = location.state?.from || '/app';
+      navigate(from, { replace: true });
     } catch (error) {
       if (error.message) {
         setServerError(error.message);
@@ -51,7 +60,7 @@ const Login = () => {
           
           <div className="mt-6 text-center text-sm">
             <span className="text-gray-600">Don't have an account? </span>
-            <Link to="/register" className="font-medium text-blue-600 hover:text-blue-500">
+            <Link to="/register" state={{ from: location.state?.from }} className="font-medium text-blue-600 hover:text-blue-500">
               Register
             </Link>
           </div>

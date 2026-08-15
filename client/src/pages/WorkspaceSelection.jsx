@@ -41,12 +41,20 @@ const WorkspaceSelection = () => {
               Select an organization to continue as {user?.name}
             </p>
           </div>
-          <Link
-            to="/onboarding/create-organization"
-            className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
-          >
-            New Organization
-          </Link>
+          <div className="flex space-x-3">
+            <Link
+              to="/app/invitations"
+              className="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50"
+            >
+              Invitations
+            </Link>
+            <Link
+              to="/onboarding/create-organization"
+              className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700"
+            >
+              New Organization
+            </Link>
+          </div>
         </div>
 
         <div className="bg-white shadow overflow-hidden sm:rounded-md">
