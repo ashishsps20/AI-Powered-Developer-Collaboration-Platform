@@ -40,7 +40,7 @@ class IssueController {
   async updateIssue(req, res, next) {
     try {
       // req.issue is set by requireIssueUpdatePermission
-      const updatedIssue = await issueService.updateIssue(req.issue, req.body);
+      const updatedIssue = await issueService.updateIssue(req.issue, req.body, req.user.id);
       res.status(200).json({ success: true, data: { issue: updatedIssue } });
     } catch (error) {
       if (error.status) {
@@ -52,7 +52,7 @@ class IssueController {
 
   async deleteIssue(req, res, next) {
     try {
-      await issueService.deleteIssue(req.issue);
+      await issueService.deleteIssue(req.issue, req.user.id);
       res.status(200).json({ success: true, message: 'Issue deleted successfully' });
     } catch (error) {
       next(error);

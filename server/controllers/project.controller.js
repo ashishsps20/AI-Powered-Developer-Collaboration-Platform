@@ -81,7 +81,7 @@ class ProjectController {
     try {
       const { projectId, userId } = req.params;
 
-      await projectService.removeProjectMember(projectId, userId);
+      await projectService.removeProjectMember(projectId, userId, req.user.id);
 
       res.status(200).json({
         success: true,

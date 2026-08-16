@@ -1,5 +1,6 @@
 import Task from '../models/Task.js';
 import ProjectMember from '../models/ProjectMember.js';
+import { activityService } from './activity.service.js';
 
 class TaskService {
   async createTask(projectId, userId, data) {
@@ -31,6 +32,15 @@ class TaskService {
     });
 
     await task.save();
+    
+    await activityService.createActivity({
+      projectId,
+      actorId: userId,
+      action: 'TASK_CREATED',
+      entityType: 'TASK',
+      entityId: task._id
+    });
+
     return task.populate('assignedTo createdBy', 'name email avatar');
   }
 
@@ -57,7 +67,7 @@ class TaskService {
     return task;
   }
 
-  async updateTask(task, data) {
+  async updateTask(task, data, userId) {
     const allowedFields = ['title', 'description', 'priority', 'assignedTo', 'dueDate', 'labels', 'status'];
     let statusChangedToDone = false;
     let statusChangedFromDone = false;
@@ -89,11 +99,36 @@ class TaskService {
       task.completedAt = undefined;
     }
 
+    const oldAssignee = task.assignedTo;
+
     await task.save();
+
+    if (data.assignedTo && data.assignedTo.toString() !== oldAssignee?.toString()) {
+      await activityService.createActivity({
+        projectId: task.project,
+        actorId: userId,
+        action: 'TASK_ASSIGNED',
+        entityType: 'TASK',
+        entityId: task._id,
+        metadata: {
+          previousAssigneeId: oldAssignee ? oldAssignee.toString() : null,
+          newAssigneeId: data.assignedTo.toString()
+        }
+      });
+    }
+
+    await activityService.createActivity({
+      projectId: task.project,
+      actorId: userId,
+      action: 'TASK_UPDATED',
+      entityType: 'TASK',
+      entityId: task._id
+    });
+
     return task.populate('assignedTo', 'name email avatar');
   }
 
-  async updateTaskStatus(task, status) {
+  async updateTaskStatus(task, status, userId) {
     if (!['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'].includes(status)) {
       throw { status: 400, message: 'Invalid status' };
     }
@@ -104,16 +139,32 @@ class TaskService {
       task.completedAt = undefined;
     }
 
+    const oldStatus = task.status;
     task.status = status;
     await task.save();
+
+    await activityService.createActivity({
+      projectId: task.project,
+      actorId: userId,
+      action: 'TASK_STATUS_CHANGED',
+      entityType: 'TASK',
+      entityId: task._id,
+      metadata: {
+        oldStatus,
+        newStatus: status
+      }
+    });
+
     return task.populate('assignedTo', 'name email avatar');
   }
 
-  async updateTaskPosition(task, status, position) {
+  async updateTaskPosition(task, status, position, userId) {
     if (status && !['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'DONE'].includes(status)) {
       throw { status: 400, message: 'Invalid status' };
     }
 
+    const oldStatus = task.status;
+    
     if (status) {
       if (status === 'DONE' && task.status !== 'DONE') {
         task.completedAt = new Date();
@@ -128,11 +179,34 @@ class TaskService {
     }
 
     await task.save();
+
+    if (status && status !== oldStatus) {
+      await activityService.createActivity({
+        projectId: task.project,
+        actorId: userId,
+        action: 'TASK_STATUS_CHANGED',
+        entityType: 'TASK',
+        entityId: task._id,
+        metadata: {
+          oldStatus,
+          newStatus: status
+        }
+      });
+    }
+
     return task.populate('assignedTo', 'name email avatar');
   }
 
-  async deleteTask(task) {
+  async deleteTask(task, userId) {
     await Task.deleteOne({ _id: task._id });
+
+    await activityService.createActivity({
+      projectId: task.project,
+      actorId: userId,
+      action: 'TASK_DELETED',
+      entityType: 'TASK',
+      entityId: task._id
+    });
   }
 }
 

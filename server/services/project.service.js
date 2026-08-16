@@ -4,6 +4,7 @@ import Project from '../models/Project.js';
 import ProjectMember from '../models/ProjectMember.js';
 import OrganizationMember from '../models/OrganizationMember.js';
 import User from '../models/User.js';
+import { activityService } from './activity.service.js';
 
 class ProjectService {
   async createProject(organizationId, userId, data) {
@@ -80,8 +81,24 @@ class ProjectService {
       }], options);
 
       if (transactionSupported) {
+        await activityService.createActivity({
+          projectId: project._id,
+          actorId: userId,
+          action: 'PROJECT_CREATED',
+          entityType: 'PROJECT',
+          entityId: project._id,
+          session
+        });
         await session.commitTransaction();
         session.endSession();
+      } else {
+        await activityService.createActivity({
+          projectId: project._id,
+          actorId: userId,
+          action: 'PROJECT_CREATED',
+          entityType: 'PROJECT',
+          entityId: project._id
+        });
       }
 
       return {
@@ -231,6 +248,16 @@ class ProjectService {
         existingMembership.assignedBy = assignedByUserId;
         existingMembership.joinedAt = new Date();
         await existingMembership.save();
+        
+        await activityService.createActivity({
+          projectId: projectId,
+          actorId: assignedByUserId,
+          action: 'PROJECT_MEMBER_ADDED',
+          entityType: 'PROJECT_MEMBER',
+          entityId: existingMembership._id,
+          metadata: { userId, role }
+        });
+
         return existingMembership;
       }
     }
@@ -244,10 +271,19 @@ class ProjectService {
       isActive: true,
     });
 
+    await activityService.createActivity({
+      projectId: projectId,
+      actorId: assignedByUserId,
+      action: 'PROJECT_MEMBER_ADDED',
+      entityType: 'PROJECT_MEMBER',
+      entityId: newMember._id,
+      metadata: { userId, role }
+    });
+
     return newMember;
   }
 
-  async removeProjectMember(projectId, targetUserId) {
+  async removeProjectMember(projectId, targetUserId, removedByUserId) {
     if (!mongoose.Types.ObjectId.isValid(targetUserId)) {
       const error = new Error('Invalid target userId');
       error.statusCode = 400;
@@ -283,6 +319,15 @@ class ProjectService {
 
     membership.isActive = false;
     await membership.save();
+
+    await activityService.createActivity({
+      projectId: projectId,
+      actorId: removedByUserId,
+      action: 'PROJECT_MEMBER_REMOVED',
+      entityType: 'PROJECT_MEMBER',
+      entityId: membership._id,
+      metadata: { userId: targetUserId }
+    });
 
     return true;
   }
@@ -351,8 +396,26 @@ class ProjectService {
       }
 
       if (transactionSupported) {
+        await activityService.createActivity({
+          projectId: projectId,
+          actorId: assignedByUserId,
+          action: 'PROJECT_MANAGER_CHANGED',
+          entityType: 'PROJECT',
+          entityId: projectId,
+          metadata: { newManagerUserId },
+          session
+        });
         await session.commitTransaction();
         session.endSession();
+      } else {
+        await activityService.createActivity({
+          projectId: projectId,
+          actorId: assignedByUserId,
+          action: 'PROJECT_MANAGER_CHANGED',
+          entityType: 'PROJECT',
+          entityId: projectId,
+          metadata: { newManagerUserId }
+        });
       }
 
       return true;

@@ -40,7 +40,7 @@ class TaskController {
   async updateTask(req, res, next) {
     try {
       // req.task is set by the requireTaskUpdatePermission middleware
-      const updatedTask = await taskService.updateTask(req.task, req.body);
+      const updatedTask = await taskService.updateTask(req.task, req.body, req.user.id);
       res.status(200).json({ success: true, data: { task: updatedTask } });
     } catch (error) {
       if (error.status) {
@@ -57,7 +57,7 @@ class TaskController {
         return res.status(400).json({ success: false, message: 'Status is required' });
       }
       
-      const updatedTask = await taskService.updateTaskStatus(req.task, status);
+      const updatedTask = await taskService.updateTaskStatus(req.task, status, req.user.id);
       res.status(200).json({ success: true, data: { task: updatedTask } });
     } catch (error) {
       if (error.status) {
@@ -70,7 +70,7 @@ class TaskController {
   async updateTaskPosition(req, res, next) {
     try {
       const { status, position } = req.body;
-      const updatedTask = await taskService.updateTaskPosition(req.task, status, position);
+      const updatedTask = await taskService.updateTaskPosition(req.task, status, position, req.user.id);
       res.status(200).json({ success: true, data: { task: updatedTask } });
     } catch (error) {
       if (error.status) {
@@ -82,7 +82,7 @@ class TaskController {
 
   async deleteTask(req, res, next) {
     try {
-      await taskService.deleteTask(req.task);
+      await taskService.deleteTask(req.task, req.user.id);
       res.status(200).json({ success: true, message: 'Task deleted successfully' });
     } catch (error) {
       next(error);

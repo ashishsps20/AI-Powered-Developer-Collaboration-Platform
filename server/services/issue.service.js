@@ -1,5 +1,6 @@
 import Issue from '../models/Issue.js';
 import ProjectMember from '../models/ProjectMember.js';
+import { activityService } from './activity.service.js';
 
 class IssueService {
   async createIssue(projectId, userId, data) {
@@ -24,6 +25,15 @@ class IssueService {
     });
 
     await issue.save();
+
+    await activityService.createActivity({
+      projectId,
+      actorId: userId,
+      action: 'ISSUE_CREATED',
+      entityType: 'ISSUE',
+      entityId: issue._id
+    });
+
     return issue.populate('assignedTo reportedBy', 'name email avatar');
   }
 
@@ -50,7 +60,7 @@ class IssueService {
     return issue;
   }
 
-  async updateIssue(issue, data) {
+  async updateIssue(issue, data, userId) {
     const allowedFields = ['title', 'description', 'status', 'priority', 'type', 'assignedTo', 'labels'];
     let statusChangedToResolved = false;
     let statusChangedFromResolved = false;
@@ -82,12 +92,60 @@ class IssueService {
       issue.resolvedAt = undefined;
     }
 
+    const oldStatus = issue.status;
+    const oldAssignee = issue.assignedTo;
+
     await issue.save();
+
+    if (data.assignedTo && data.assignedTo.toString() !== oldAssignee?.toString()) {
+      await activityService.createActivity({
+        projectId: issue.project,
+        actorId: userId,
+        action: 'ISSUE_ASSIGNED',
+        entityType: 'ISSUE',
+        entityId: issue._id,
+        metadata: {
+          previousAssigneeId: oldAssignee ? oldAssignee.toString() : null,
+          newAssigneeId: data.assignedTo.toString()
+        }
+      });
+    }
+
+    if (data.status && data.status !== oldStatus) {
+      await activityService.createActivity({
+        projectId: issue.project,
+        actorId: userId,
+        action: 'ISSUE_STATUS_CHANGED',
+        entityType: 'ISSUE',
+        entityId: issue._id,
+        metadata: {
+          oldStatus,
+          newStatus: data.status
+        }
+      });
+    }
+
+    await activityService.createActivity({
+      projectId: issue.project,
+      actorId: userId,
+      action: 'ISSUE_UPDATED',
+      entityType: 'ISSUE',
+      entityId: issue._id
+    });
+
     return issue.populate('assignedTo reportedBy', 'name email avatar');
   }
 
-  async deleteIssue(issue) {
+  async deleteIssue(issue, userId) {
     await Issue.deleteOne({ _id: issue._id });
+
+    await activityService.createActivity({
+      projectId: issue.project,
+      actorId: userId,
+      action: 'ISSUE_DELETED',
+      entityType: 'ISSUE',
+      entityId: issue._id
+    });
   }
 }
 

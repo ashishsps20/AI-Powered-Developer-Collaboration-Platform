@@ -4,6 +4,8 @@ import { requireOrganizationMember, requireOrganizationOwner } from '../middlewa
 import { requireProjectMember, requireProjectManager } from '../middleware/project.middleware.js';
 import taskRoutes from './task.routes.js';
 import issueRoutes from './issue.routes.js';
+import commentRoutes from './comment.routes.js';
+import activityRoutes from './activity.routes.js';
 
 // Note: mergeParams is required because the router is mounted with /:organizationId/projects
 const router = express.Router({ mergeParams: true });
@@ -37,5 +39,11 @@ router.use('/:projectId/tasks', requireProjectMember, taskRoutes);
 
 // Mount Issue routes
 router.use('/:projectId/issues', requireProjectMember, issueRoutes);
+
+// Mount Comment routes
+router.use('/:projectId/comments', requireProjectMember, commentRoutes);
+
+// Mount Activity routes
+router.use('/:projectId/activity', requireProjectMember, activityRoutes);
 
 export default router;
