@@ -20,10 +20,6 @@ const ProjectMembers = () => {
   const [orgMembersMap, setOrgMembersMap] = useState({});
 
   useEffect(() => {
-    if (!currentOrganization || currentOrganization.id !== organizationId) {
-      setCurrentOrganization(organizationId).catch(() => {});
-    }
-    fetchProject(organizationId, projectId).catch(() => {});
     fetchProjectMembers(organizationId, projectId).catch(() => {});
     
     // Fetch org members for role display
@@ -37,7 +33,7 @@ const ProjectMembers = () => {
         setOrgMembersMap(map);
       })
       .catch(() => {});
-  }, [organizationId, projectId, currentOrganization, setCurrentOrganization, fetchProject, fetchProjectMembers]);
+  }, [organizationId, projectId, fetchProjectMembers]);
 
   // Handle re-fetch when modals close
   const handleModalClose = () => {
@@ -58,61 +54,20 @@ const ProjectMembers = () => {
     }
   };
 
-  if (isLoading && !currentProject) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mb-4"></div>
-        <p className="text-gray-600">Loading members...</p>
-      </div>
-    );
-  }
-
-  if (error || !currentProject) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-12 px-4">
-        <div className="bg-white py-8 px-6 shadow sm:rounded-lg sm:px-10 text-center max-w-md w-full">
-          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
-            <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-            </svg>
-          </div>
-          <h2 className="text-xl font-bold text-gray-900 mb-2">Error</h2>
-          <p className="text-gray-600 mb-6">{error?.message || 'Project not found'}</p>
-          <Link
-            to={`/app/org/${organizationId}/dashboard`}
-            className="w-full inline-flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700"
-          >
-            Back to Organization
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
   // Find the current user's role in this project
   const currentUserMembership = projectMembers.find(m => m.user.id === user?.id);
   const projectRole = currentUserMembership?.role || null;
   const isManagerOrOwner = orgRole === 'OWNER' || projectRole === 'PROJECT_MANAGER';
 
-  return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center py-12 sm:px-6 lg:px-8">
-      <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10 w-full max-w-4xl">
-        <div className="mb-4 flex space-x-2">
-          <Link to={`/app/org/${organizationId}/dashboard`} className="text-sm text-blue-600 hover:underline">
-            {currentOrganization?.name || 'Organization'}
-          </Link>
-          <span className="text-gray-400">/</span>
-          <Link to={`/app/org/${organizationId}/projects/${projectId}`} className="text-sm text-blue-600 hover:underline">
-            {currentProject.name}
-          </Link>
-          <span className="text-gray-400">/</span>
-          <span className="text-sm text-gray-500">Members</span>
-        </div>
+  if (!currentProject) return null;
 
-        <div className="flex justify-between items-center mb-8 border-b pb-6">
+  return (
+    <div className="bg-white shadow sm:rounded-lg">
+      <div className="px-4 py-5 sm:p-6">
+        <div className="flex justify-between items-center mb-6">
           <div>
-            <h1 className="text-3xl font-extrabold text-gray-900">Project Members</h1>
-            <p className="text-gray-500 mt-2">Manage developers in {currentProject.name}.</p>
+            <h3 className="text-lg leading-6 font-medium text-gray-900">Project Members</h3>
+            <p className="text-gray-500 mt-1 text-sm">Manage developers in {currentProject.name}.</p>
           </div>
           <div className="flex space-x-3">
             {isManagerOrOwner && (

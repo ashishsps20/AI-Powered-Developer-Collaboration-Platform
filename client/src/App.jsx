@@ -17,6 +17,9 @@ import ProjectDashboard from './pages/ProjectDashboard';
 import ProjectMembers from './pages/ProjectMembers';
 import AcceptInvitation from './pages/AcceptInvitation';
 import ProtectedRoute from './components/auth/ProtectedRoute';
+import ProjectLayout from './layouts/ProjectLayout';
+import ProjectTasks from './pages/ProjectTasks';
+import ProjectIssues from './pages/ProjectIssues';
 import useAuthStore from './store/authStore';
 import { useEffect } from 'react';
 
@@ -96,22 +99,19 @@ function App() {
               </ProtectedRoute>
             } 
           />
-          <Route 
-            path="/app/org/:organizationId/projects/:projectId" 
+          <Route
+            path="/app/org/:organizationId/projects/:projectId"
             element={
               <ProtectedRoute>
-                <ProjectDashboard />
+                <ProjectLayout />
               </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/app/org/:organizationId/projects/:projectId/members" 
-            element={
-              <ProtectedRoute>
-                <ProjectMembers />
-              </ProtectedRoute>
-            } 
-          />
+            }
+          >
+            <Route index element={<ProjectDashboard />} />
+            <Route path="tasks" element={<ProjectTasks />} />
+            <Route path="issues" element={<ProjectIssues />} />
+            <Route path="members" element={<ProjectMembers />} />
+          </Route>
           <Route 
             path="/app/invitations" 
             element={
