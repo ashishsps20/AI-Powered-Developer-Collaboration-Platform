@@ -2,11 +2,9 @@ import GitHubConnection from '../models/GitHubConnection.js';
 import { decrypt } from '../utils/encryption.js';
 
 class GitHubService {
-  constructor() {
-    this.clientId = process.env.GITHUB_CLIENT_ID;
-    this.clientSecret = process.env.GITHUB_CLIENT_SECRET;
-    this.callbackUrl = process.env.GITHUB_CALLBACK_URL;
-  }
+  get clientId() { return process.env.GITHUB_CLIENT_ID; }
+  get clientSecret() { return process.env.GITHUB_CLIENT_SECRET; }
+  get callbackUrl() { return process.env.GITHUB_CALLBACK_URL; }
 
   async exchangeCodeForToken(code) {
     const response = await fetch('https://github.com/login/oauth/access_token', {

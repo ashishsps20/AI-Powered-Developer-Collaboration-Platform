@@ -93,6 +93,7 @@ class GitHubController {
         id: repo.id,
         name: repo.name,
         fullName: repo.full_name,
+        owner: { login: repo.owner.login },
         private: repo.private,
         htmlUrl: repo.html_url,
         defaultBranch: repo.default_branch
@@ -100,6 +101,9 @@ class GitHubController {
 
       res.status(200).json({ success: true, data: { repositories: formattedRepos } });
     } catch (error) {
+      if (error.message === 'GitHub connection not found') {
+        return res.status(404).json({ success: false, message: 'GitHub connection not found' });
+      }
       next(error);
     }
   }
@@ -217,15 +221,7 @@ class GitHubController {
       
       const commits = await githubService.getCommits(req.user.id, repo.owner, repo.name, branch, page, limit);
       
-      const formatted = commits.map(c => ({
-        sha: c.sha,
-        message: c.commit.message,
-        author: c.commit.author.name,
-        date: c.commit.author.date,
-        url: c.html_url
-      }));
-
-      res.status(200).json({ success: true, data: { commits: formatted } });
+      res.status(200).json({ success: true, data: { commits } });
     } catch (error) {
       next(error);
     }
@@ -239,19 +235,7 @@ class GitHubController {
       
       const prs = await githubService.getPullRequests(req.user.id, repo.owner, repo.name, state);
       
-      const formatted = prs.map(pr => ({
-        number: pr.number,
-        title: pr.title,
-        state: pr.state,
-        author: pr.user.login,
-        createdAt: pr.created_at,
-        updatedAt: pr.updated_at,
-        htmlUrl: pr.html_url,
-        sourceBranch: pr.head.ref,
-        targetBranch: pr.base.ref
-      }));
-
-      res.status(200).json({ success: true, data: { pullRequests: formatted } });
+      res.status(200).json({ success: true, data: { pullRequests: prs } });
     } catch (error) {
       next(error);
     }

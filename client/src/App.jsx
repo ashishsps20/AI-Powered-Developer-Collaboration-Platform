@@ -24,6 +24,8 @@ import ProjectIssues from './pages/ProjectIssues';
 import useAuthStore from './store/authStore';
 import { useEffect } from 'react';
 import ProjectActivity from './pages/ProjectActivity';
+import ProjectGithub from './pages/ProjectGithub';
+import Integrations from './pages/Integrations';
 
 const queryClient = new QueryClient();
 
@@ -117,12 +119,21 @@ function App() {
             <Route path="issues" element={<ProjectIssues />} />
             <Route path="activity" element={<ProjectActivity />} />
             <Route path="members" element={<ProjectMembers />} />
+            <Route path="github" element={<ProjectGithub />} />
           </Route>
           <Route 
             path="/app/invitations" 
             element={
               <ProtectedRoute>
                 <UserInvitations />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/settings/integrations" 
+            element={
+              <ProtectedRoute>
+                <Integrations />
               </ProtectedRoute>
             } 
           />

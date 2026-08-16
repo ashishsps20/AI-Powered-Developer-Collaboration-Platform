@@ -9,7 +9,7 @@ const ProjectLayout = () => {
   const navigate = useNavigate();
   
   const { currentOrganization, setCurrentOrganization } = useOrgStore();
-  const { currentProject, fetchProject, isLoading, error } = useProjectStore();
+  const { currentProject, fetchProject, fetchProjectMembers, isLoading, error } = useProjectStore();
 
   useEffect(() => {
     // Ensure org is loaded
@@ -17,7 +17,8 @@ const ProjectLayout = () => {
       setCurrentOrganization(organizationId).catch(() => {});
     }
     fetchProject(organizationId, projectId).catch(() => {});
-  }, [organizationId, projectId, currentOrganization, setCurrentOrganization, fetchProject]);
+    fetchProjectMembers(organizationId, projectId).catch(() => {});
+  }, [organizationId, projectId, currentOrganization, setCurrentOrganization, fetchProject, fetchProjectMembers]);
 
   if (isLoading && !currentProject) {
     return (
@@ -56,6 +57,7 @@ const ProjectLayout = () => {
     { name: 'Issues', href: `/app/org/${organizationId}/projects/${projectId}/issues` },
     { name: 'Activity', href: `/app/org/${organizationId}/projects/${projectId}/activity` },
     { name: 'Members', href: `/app/org/${organizationId}/projects/${projectId}/members` },
+    { name: 'GitHub', href: `/app/org/${organizationId}/projects/${projectId}/github` },
   ];
 
   return (

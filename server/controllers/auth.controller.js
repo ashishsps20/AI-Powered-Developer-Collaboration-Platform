@@ -52,11 +52,10 @@ class AuthController {
 
       const { user, token } = await authService.loginUser(value);
 
-      // Set HTTP-only cookie
       res.cookie('jwt', token, {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 24 * 60 * 60 * 1000, // 15 minutes to match example JWT_EXPIRES_IN=15m
         path: '/'
       });
@@ -97,7 +96,7 @@ class AuthController {
       res.cookie('jwt', '', {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
+        sameSite: 'lax',
         maxAge: 0, // Clear the cookie instantly
         path: '/'
       });

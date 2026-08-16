@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { activityService } from '../services/activityService';
 import { 
-  CheckCircle, MessageSquare, AlertCircle, ArrowRight, UserPlus, Users, Briefcase
+  CheckCircle, MessageSquare, AlertCircle, ArrowRight, UserPlus, Users, Briefcase, Code, GitPullRequest, GitCommit
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -49,6 +49,22 @@ const formatActivityMessage = (activity) => {
     case 'COMMENT_DELETED':
       return `${actor} deleted a comment.`;
       
+    // GitHub Events
+    case 'GITHUB_REPOSITORY_CONNECTED':
+      return `${actor} connected GitHub repository ${activity.metadata?.repositoryName || ''}.`;
+    case 'GITHUB_REPOSITORY_DISCONNECTED':
+      return `${actor} disconnected a GitHub repository.`;
+    case 'GITHUB_PUSH':
+      return `${actor} pushed ${activity.metadata?.commitCount || 1} commit(s) to ${activity.metadata?.branch || 'a branch'}.`;
+    case 'GITHUB_PR_OPENED':
+      return `${actor} opened pull request #${activity.metadata?.prNumber} "${activity.metadata?.prTitle}".`;
+    case 'GITHUB_PR_CLOSED':
+      return `${actor} closed pull request #${activity.metadata?.prNumber} "${activity.metadata?.prTitle}".`;
+    case 'GITHUB_ISSUE_OPENED':
+      return `${actor} opened GitHub issue #${activity.metadata?.issueNumber} "${activity.metadata?.issueTitle}".`;
+    case 'GITHUB_PR_REVIEWED':
+      return `${actor} submitted a review on pull request #${activity.metadata?.prNumber}.`;
+      
     default:
       return `${actor} performed an action.`;
   }
@@ -70,6 +86,17 @@ const getActivityIcon = (action) => {
   if (action.includes('PROJECT')) {
     return <Briefcase className="h-5 w-5 text-indigo-500" />;
   }
+  
+  if (action.includes('GITHUB_PR')) {
+    return <GitPullRequest className="h-5 w-5 text-purple-500" />;
+  }
+  if (action.includes('GITHUB_PUSH')) {
+    return <GitCommit className="h-5 w-5 text-gray-700" />;
+  }
+  if (action.includes('GITHUB')) {
+    return <Code className="h-5 w-5 text-gray-900" />;
+  }
+  
   return <ArrowRight className="h-5 w-5 text-gray-500" />;
 };
 
