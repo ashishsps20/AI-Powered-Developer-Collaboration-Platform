@@ -3,6 +3,7 @@ import organizationController from '../controllers/organization.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { requireOrganizationMember, requireOrganizationOwner } from '../middleware/organization.middleware.js';
 import invitationController from '../controllers/invitation.controller.js';
+import projectRoutes from './project.routes.js';
 
 const router = express.Router();
 
@@ -20,6 +21,9 @@ router.get('/invitations/pending', invitationController.getPendingInvitations);
 // Organization specific routes
 router.get('/:organizationId', requireOrganizationMember, organizationController.getOrganization);
 router.get('/:organizationId/members', requireOrganizationMember, organizationController.getMembers);
+
+// Mount Project routes
+router.use('/:organizationId/projects', projectRoutes);
 
 // Owner only routes
 router.get('/:organizationId/invitations', requireOrganizationMember, requireOrganizationOwner, invitationController.getOrganizationInvitations);
