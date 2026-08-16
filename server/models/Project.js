@@ -52,6 +52,18 @@ const projectSchema = new mongoose.Schema(
         repositoryUrl: null,
       },
     },
+    githubRepository: {
+      type: {
+        githubRepositoryId: { type: Number },
+        owner: { type: String },
+        name: { type: String },
+        fullName: { type: String },
+        htmlUrl: { type: String },
+        defaultBranch: { type: String },
+        private: { type: Boolean }
+      },
+      default: null
+    },
   },
   { timestamps: true }
 );

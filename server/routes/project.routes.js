@@ -6,6 +6,7 @@ import taskRoutes from './task.routes.js';
 import issueRoutes from './issue.routes.js';
 import commentRoutes from './comment.routes.js';
 import activityRoutes from './activity.routes.js';
+import { projectGithubRouter } from './github.routes.js';
 
 // Note: mergeParams is required because the router is mounted with /:organizationId/projects
 const router = express.Router({ mergeParams: true });
@@ -45,5 +46,8 @@ router.use('/:projectId/comments', requireProjectMember, commentRoutes);
 
 // Mount Activity routes
 router.use('/:projectId/activity', requireProjectMember, activityRoutes);
+
+// Mount GitHub project routes
+router.use('/:projectId/github', requireProjectMember, projectGithubRouter);
 
 export default router;

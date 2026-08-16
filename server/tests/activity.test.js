@@ -1,3 +1,4 @@
+import './setup.js';
 import request from 'supertest';
 import app from '../app.js';
 import mongoose from 'mongoose';
@@ -10,6 +11,8 @@ import Task from '../models/Task.js';
 import Issue from '../models/Issue.js';
 import Comment from '../models/Comment.js';
 import Activity from '../models/Activity.js';
+
+import { jest } from '@jest/globals';
 
 describe('Activity API', () => {
   jest.setTimeout(30000);
