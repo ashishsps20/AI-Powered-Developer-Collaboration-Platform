@@ -4,7 +4,9 @@ import useProjectStore from '../../store/projectStore';
 import useOrgStore from '../../store/orgStore';
 import useUIStore from '../../store/uiStore';
 import useAuthStore from '../../store/authStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { issueService } from '../../services/issueService';
+import CommentList from '../comments/CommentList';
 
 const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, onIssueDeleted }) => {
   const { selectedIssueId, setSelectedIssueId } = useUIStore();
@@ -14,6 +16,7 @@ const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, on
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const queryClient = useQueryClient();
 
   const { register, handleSubmit, reset } = useForm();
 
@@ -62,6 +65,7 @@ const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, on
 
       const updatedIssue = await issueService.updateIssue(organizationId, projectId, issue._id, formattedData);
       onIssueUpdated(updatedIssue);
+      queryClient.invalidateQueries({ queryKey: ['activity', organizationId, projectId] });
       setIsEditMode(false);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to update issue');
@@ -75,6 +79,7 @@ const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, on
       try {
         await issueService.deleteIssue(organizationId, projectId, issue._id);
         onIssueDeleted(issue._id);
+        queryClient.invalidateQueries({ queryKey: ['activity', organizationId, projectId] });
         handleClose();
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Failed to delete issue');
@@ -272,7 +277,7 @@ const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, on
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Status</h4>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
-                        {issue.status.replace('_', ' ')}
+                        {issue.status?.replace('_', ' ') || issue.status}
                       </span>
                     </div>
                     <div>
@@ -320,6 +325,9 @@ const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, on
                       </div>
                     )}
                   </div>
+                  
+                  {/* Comments Section */}
+                  <CommentList entityType="ISSUE" entityId={issue._id} />
                 </div>
               )}
             </div>

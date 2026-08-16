@@ -192,7 +192,7 @@ const ProjectIssues = () => {
                           issue.status === 'IN_PROGRESS' ? 'bg-blue-100 text-blue-800' : 
                           issue.status === 'RESOLVED' ? 'bg-green-100 text-green-800' : 
                           'bg-gray-100 text-gray-800'}`}>
-                        {issue.status.replace('_', ' ')}
+                        {issue.status?.replace('_', ' ') || issue.status}
                       </p>
                     </div>
                   </div>

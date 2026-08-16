@@ -57,7 +57,7 @@ class AuthController {
         httpOnly: true,
         secure: process.env.NODE_ENV === 'production',
         sameSite: 'strict',
-        maxAge: 15 * 60 * 1000, // 15 minutes to match example JWT_EXPIRES_IN=15m
+        maxAge: 24 * 60 * 60 * 1000, // 15 minutes to match example JWT_EXPIRES_IN=15m
         path: '/'
       });
 

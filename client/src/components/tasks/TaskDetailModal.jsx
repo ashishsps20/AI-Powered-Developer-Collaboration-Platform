@@ -4,7 +4,9 @@ import useProjectStore from '../../store/projectStore';
 import useOrgStore from '../../store/orgStore';
 import useUIStore from '../../store/uiStore';
 import useAuthStore from '../../store/authStore';
+import { useQueryClient } from '@tanstack/react-query';
 import { taskService } from '../../services/taskService';
+import CommentList from '../comments/CommentList';
 
 const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTaskDeleted }) => {
   const { selectedTaskId, setSelectedTaskId } = useUIStore();
@@ -14,6 +16,7 @@ const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTas
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isEditMode, setIsEditMode] = useState(false);
+  const queryClient = useQueryClient();
 
   const { register, handleSubmit, reset, setValue } = useForm();
 
@@ -64,6 +67,7 @@ const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTas
 
       const updatedTask = await taskService.updateTask(organizationId, projectId, task._id, formattedData);
       onTaskUpdated(updatedTask);
+      queryClient.invalidateQueries({ queryKey: ['activity', organizationId, projectId] });
       setIsEditMode(false);
     } catch (err) {
       setError(err.response?.data?.message || err.message || 'Failed to update task');
@@ -77,6 +81,7 @@ const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTas
       try {
         await taskService.deleteTask(organizationId, projectId, task._id);
         onTaskDeleted(task._id);
+        queryClient.invalidateQueries({ queryKey: ['activity', organizationId, projectId] });
         handleClose();
       } catch (err) {
         setError(err.response?.data?.message || err.message || 'Failed to delete task');
@@ -266,7 +271,7 @@ const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTas
                     <div>
                       <h4 className="text-sm font-medium text-gray-500 mb-1">Status</h4>
                       <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-200 text-gray-800">
-                        {task.status.replace('_', ' ')}
+                        {task.status?.replace('_', ' ') || task.status}
                       </span>
                     </div>
                     <div>
@@ -320,6 +325,9 @@ const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTas
                       </div>
                     )}
                   </div>
+                  
+                  {/* Comments Section */}
+                  <CommentList entityType="TASK" entityId={task._id} />
                 </div>
               )}
             </div>

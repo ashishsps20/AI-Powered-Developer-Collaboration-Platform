@@ -54,6 +54,7 @@ const ProjectLayout = () => {
     { name: 'Overview', href: `/app/org/${organizationId}/projects/${projectId}` },
     { name: 'Tasks', href: `/app/org/${organizationId}/projects/${projectId}/tasks` },
     { name: 'Issues', href: `/app/org/${organizationId}/projects/${projectId}/issues` },
+    { name: 'Activity', href: `/app/org/${organizationId}/projects/${projectId}/activity` },
     { name: 'Members', href: `/app/org/${organizationId}/projects/${projectId}/members` },
   ];
 
