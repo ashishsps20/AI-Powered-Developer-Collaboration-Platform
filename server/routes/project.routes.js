@@ -2,6 +2,8 @@ import express from 'express';
 import projectController from '../controllers/project.controller.js';
 import { requireOrganizationMember, requireOrganizationOwner } from '../middleware/organization.middleware.js';
 import { requireProjectMember, requireProjectManager } from '../middleware/project.middleware.js';
+import taskRoutes from './task.routes.js';
+import issueRoutes from './issue.routes.js';
 
 // Note: mergeParams is required because the router is mounted with /:organizationId/projects
 const router = express.Router({ mergeParams: true });
@@ -29,5 +31,11 @@ router.delete('/:projectId/members/:userId', requireProjectMember, requireProjec
 
 // Reassign Project Manager (Project Manager or Owner only)
 router.patch('/:projectId/manager', requireProjectMember, requireProjectManager, projectController.reassignProjectManager);
+
+// Mount Task routes
+router.use('/:projectId/tasks', requireProjectMember, taskRoutes);
+
+// Mount Issue routes
+router.use('/:projectId/issues', requireProjectMember, issueRoutes);
 
 export default router;
