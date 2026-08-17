@@ -33,3 +33,4 @@ projectGithubRouter.get('/repository', githubController.getProjectRepositoryInfo
 projectGithubRouter.get('/branches', githubController.getBranches);
 projectGithubRouter.get('/commits', githubController.getCommits);
 projectGithubRouter.get('/pull-requests', githubController.getPullRequests);
+projectGithubRouter.get('/issues', githubController.getIssues);

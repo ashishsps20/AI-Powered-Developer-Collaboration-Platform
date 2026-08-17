@@ -5,6 +5,7 @@ import Project from '../models/Project.js';
 import Activity from '../models/Activity.js';
 import { githubService } from '../services/github.service.js';
 import { encrypt } from '../utils/encryption.js';
+import { githubSyncService } from '../services/githubSync.service.js';
 
 class GitHubController {
   
@@ -241,6 +242,20 @@ class GitHubController {
     }
   }
 
+  async getIssues(req, res, next) {
+    try {
+      const { state = 'all' } = req.query;
+      const project = await Project.findById(req.params.projectId);
+      const repo = project.githubRepository;
+      
+      const issues = await githubService.getIssues(req.user.id, repo.owner, repo.name, state);
+      
+      res.status(200).json({ success: true, data: { issues } });
+    } catch (error) {
+      next(error);
+    }
+  }
+
   // ==========================================
   // WEBHOOK HANDLER
   // ==========================================
@@ -330,6 +345,9 @@ class GitHubController {
             author: payload.sender?.login
           }
         });
+        
+        // Trigger Module 11 synchronization logic
+        await githubSyncService.handlePullRequestSync(project, payload);
       }
       else if (eventType === 'issues') {
         const action = payload.action;
@@ -351,6 +369,9 @@ class GitHubController {
             author: payload.sender?.login
           }
         });
+        
+        // Trigger Module 11 synchronization logic
+        await githubSyncService.handleGithubIssueSync(project, payload);
       }
       else if (eventType === 'pull_request_review') {
         if (payload.action === 'submitted') {
