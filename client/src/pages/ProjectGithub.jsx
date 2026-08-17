@@ -7,6 +7,7 @@ import useOrgStore from '../store/orgStore';
 import useAuthStore from '../store/authStore';
 import RepositorySelector from '../components/github/RepositorySelector';
 import ConnectedRepository from '../components/github/ConnectedRepository';
+import GithubSyncSettings from '../components/github/GithubSyncSettings';
 import { Code } from 'lucide-react';
 
 const ProjectGithub = () => {
@@ -93,12 +94,19 @@ const ProjectGithub = () => {
       </div>
 
       {isConnected ? (
-        <ConnectedRepository
-          repository={data.data.repository}
-          onDisconnect={() => disconnectMutation.mutate()}
-          isDisconnecting={disconnectMutation.isLoading}
-          userRole={userRole}
-        />
+        <>
+          <ConnectedRepository
+            repository={data.data.repository}
+            onDisconnect={() => disconnectMutation.mutate()}
+            isDisconnecting={disconnectMutation.isLoading}
+            userRole={userRole}
+          />
+          <GithubSyncSettings 
+            organizationId={organizationId} 
+            projectId={projectId} 
+            userRole={userRole} 
+          />
+        </>
       ) : (
         <div className="bg-white shadow sm:rounded-lg">
           {needsAuth ? (

@@ -7,6 +7,7 @@ import useAuthStore from '../../store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { taskService } from '../../services/taskService';
 import CommentList from '../comments/CommentList';
+import TaskGithubSection from '../github/TaskGithubSection';
 
 const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTaskDeleted }) => {
   const { selectedTaskId, setSelectedTaskId } = useUIStore();
@@ -266,6 +267,13 @@ const TaskDetailModal = ({ organizationId, projectId, task, onTaskUpdated, onTas
                       {task.description || <span className="text-gray-400 italic">No description provided.</span>}
                     </div>
                   </div>
+
+                  <TaskGithubSection 
+                    organizationId={organizationId} 
+                    projectId={projectId} 
+                    taskId={task._id} 
+                    canEdit={canEdit} 
+                  />
                   
                   <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-md border">
                     <div>

@@ -115,6 +115,47 @@ class GitHubService {
     return response.json();
   }
 
+  async getPullRequest(userId, owner, repo, pullNumber) {
+    const token = await this._getDecryptedToken(userId);
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/pulls/${pullNumber}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch pull request');
+    return response.json();
+  }
+
+  async getIssue(userId, owner, repo, issueNumber) {
+    const token = await this._getDecryptedToken(userId);
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues/${issueNumber}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch issue');
+    return response.json();
+  }
+
+  async getIssues(userId, owner, repo, state = 'all') {
+    const token = await this._getDecryptedToken(userId);
+    const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/issues?state=${state}&sort=updated&direction=desc`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+        Accept: 'application/vnd.github.v3+json',
+      },
+    });
+
+    if (!response.ok) throw new Error('Failed to fetch issues');
+    const issues = await response.json();
+    // GitHub API returns PRs as issues too, we should filter them out
+    return issues.filter(issue => !issue.pull_request);
+  }
+
   async createWebhook(userId, owner, repo, webhookUrl, secret) {
     const token = await this._getDecryptedToken(userId);
     const response = await fetch(`https://api.github.com/repos/${owner}/${repo}/hooks`, {

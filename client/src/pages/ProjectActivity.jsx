@@ -65,6 +65,20 @@ const formatActivityMessage = (activity) => {
     case 'GITHUB_PR_REVIEWED':
       return `${actor} submitted a review on pull request #${activity.metadata?.prNumber}.`;
       
+    // Module 11 Sync Events
+    case 'TASK_GITHUB_PR_LINKED':
+      return `${actor} linked PR #${activity.metadata?.prNumber} to task.`;
+    case 'TASK_GITHUB_PR_UNLINKED':
+      return `${actor} unlinked PR #${activity.metadata?.prNumber} from task.`;
+    case 'ISSUE_GITHUB_ISSUE_LINKED':
+      return `${actor} linked GitHub Issue #${activity.metadata?.githubIssueNumber} to internal issue.`;
+    case 'ISSUE_GITHUB_ISSUE_UNLINKED':
+      return `${actor} unlinked GitHub Issue #${activity.metadata?.githubIssueNumber} from internal issue.`;
+    case 'TASK_STATUS_AUTO_SYNCED':
+      return `Task was moved from ${activity.metadata?.oldStatus?.replace(/_/g, ' ')} to ${activity.metadata?.newStatus?.replace(/_/g, ' ')} by GitHub synchronization (PR #${activity.metadata?.prNumber}).`;
+    case 'ISSUE_STATUS_AUTO_SYNCED':
+      return `Issue was moved from ${activity.metadata?.oldStatus?.replace(/_/g, ' ')} to ${activity.metadata?.newStatus?.replace(/_/g, ' ')} by GitHub synchronization (Issue #${activity.metadata?.githubIssueNumber}).`;
+
     default:
       return `${actor} performed an action.`;
   }

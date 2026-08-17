@@ -7,6 +7,7 @@ import useAuthStore from '../../store/authStore';
 import { useQueryClient } from '@tanstack/react-query';
 import { issueService } from '../../services/issueService';
 import CommentList from '../comments/CommentList';
+import IssueGithubSection from '../github/IssueGithubSection';
 
 const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, onIssueDeleted }) => {
   const { selectedIssueId, setSelectedIssueId } = useUIStore();
@@ -266,6 +267,13 @@ const IssueDetailModal = ({ organizationId, projectId, issue, onIssueUpdated, on
                       {issue.description || <span className="text-gray-400 italic">No description provided.</span>}
                     </div>
                   </div>
+
+                  <IssueGithubSection 
+                    organizationId={organizationId} 
+                    projectId={projectId} 
+                    issueId={issue._id} 
+                    canEdit={canEdit} 
+                  />
                   
                   <div className="grid grid-cols-2 gap-6 bg-gray-50 p-4 rounded-md border">
                     <div>
