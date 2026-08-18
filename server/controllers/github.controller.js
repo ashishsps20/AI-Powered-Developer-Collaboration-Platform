@@ -5,7 +5,8 @@ import Project from '../models/Project.js';
 import Activity from '../models/Activity.js';
 import { githubService } from '../services/github.service.js';
 import { encrypt } from '../utils/encryption.js';
-import { githubSyncService } from '../services/githubSync.service.js';
+import { addGithubJob } from '../queues/github.queue.js';
+import { cacheService } from '../services/cache.service.js';
 
 class GitHubController {
   
@@ -205,9 +206,16 @@ class GitHubController {
     try {
       const project = await Project.findById(req.params.projectId);
       const repo = project.githubRepository;
-      const branches = await githubService.getBranches(req.user.id, repo.owner, repo.name);
       
-      const formatted = branches.map(b => ({ name: b.name, protected: b.protected, sha: b.commit.sha }));
+      const cacheKey = `github:project:${project._id}:branches`;
+      let formatted = await cacheService.getCache(cacheKey);
+      
+      if (!formatted) {
+        const branches = await githubService.getBranches(req.user.id, repo.owner, repo.name);
+        formatted = branches.map(b => ({ name: b.name, protected: b.protected, sha: b.commit.sha }));
+        await cacheService.setCache(cacheKey, formatted, 300); // 5 min TTL
+      }
+      
       res.status(200).json({ success: true, data: { branches: formatted } });
     } catch (error) {
       next(error);
@@ -220,7 +228,13 @@ class GitHubController {
       const project = await Project.findById(req.params.projectId);
       const repo = project.githubRepository;
       
-      const commits = await githubService.getCommits(req.user.id, repo.owner, repo.name, branch, page, limit);
+      const cacheKey = `github:project:${project._id}:commits:${branch}:${page}:${limit}`;
+      let commits = await cacheService.getCache(cacheKey);
+      
+      if (!commits) {
+        commits = await githubService.getCommits(req.user.id, repo.owner, repo.name, branch, page, limit);
+        await cacheService.setCache(cacheKey, commits, 60); // 1 min TTL
+      }
       
       res.status(200).json({ success: true, data: { commits } });
     } catch (error) {
@@ -234,7 +248,13 @@ class GitHubController {
       const project = await Project.findById(req.params.projectId);
       const repo = project.githubRepository;
       
-      const prs = await githubService.getPullRequests(req.user.id, repo.owner, repo.name, state);
+      const cacheKey = `github:project:${project._id}:pullrequests:${state}`;
+      let prs = await cacheService.getCache(cacheKey);
+      
+      if (!prs) {
+        prs = await githubService.getPullRequests(req.user.id, repo.owner, repo.name, state);
+        await cacheService.setCache(cacheKey, prs, 300); // 5 min TTL
+      }
       
       res.status(200).json({ success: true, data: { pullRequests: prs } });
     } catch (error) {
@@ -248,7 +268,13 @@ class GitHubController {
       const project = await Project.findById(req.params.projectId);
       const repo = project.githubRepository;
       
-      const issues = await githubService.getIssues(req.user.id, repo.owner, repo.name, state);
+      const cacheKey = `github:project:${project._id}:issues:${state}`;
+      let issues = await cacheService.getCache(cacheKey);
+      
+      if (!issues) {
+        issues = await githubService.getIssues(req.user.id, repo.owner, repo.name, state);
+        await cacheService.setCache(cacheKey, issues, 300); // 5 min TTL
+      }
       
       res.status(200).json({ success: true, data: { issues } });
     } catch (error) {
@@ -306,89 +332,32 @@ class GitHubController {
         return res.status(200).send('Project not connected');
       }
 
-      // Handle specific events
+      // Handle cache invalidations based on event type
       if (eventType === 'push') {
-        const branch = payload.ref.replace('refs/heads/', '');
-        const commitCount = payload.commits ? payload.commits.length : 0;
-        
-        await Activity.create({
-          project: project._id,
-          action: 'GITHUB_PUSH',
-          entityType: 'GITHUB',
-          entityId: project._id,
-          metadata: {
-            branch,
-            commitCount,
-            pusher: payload.pusher?.name || payload.sender?.login
-          }
-        });
-      } 
-      else if (eventType === 'pull_request') {
-        const action = payload.action;
-        let activityAction = 'GITHUB_PR_UPDATED';
-        
-        if (action === 'opened') activityAction = 'GITHUB_PR_OPENED';
-        if (action === 'closed') activityAction = 'GITHUB_PR_CLOSED';
-        if (action === 'reopened') activityAction = 'GITHUB_PR_REOPENED';
-        
-        await Activity.create({
-          project: project._id,
-          action: activityAction,
-          entityType: 'GITHUB',
-          entityId: project._id,
-          metadata: {
-            prNumber: payload.pull_request.number,
-            title: payload.pull_request.title,
-            url: payload.pull_request.html_url,
-            sourceBranch: payload.pull_request.head.ref,
-            targetBranch: payload.pull_request.base.ref,
-            author: payload.sender?.login
-          }
-        });
-        
-        // Trigger Module 11 synchronization logic
-        await githubSyncService.handlePullRequestSync(project, payload);
+        await cacheService.deleteByPattern(`github:project:${project._id}:commits:*`);
+        await cacheService.deleteByPattern(`github:project:${project._id}:branches`);
+      } else if (eventType === 'pull_request') {
+        await cacheService.deleteByPattern(`github:project:${project._id}:pullrequests:*`);
+      } else if (eventType === 'issues') {
+        await cacheService.deleteByPattern(`github:project:${project._id}:issues:*`);
       }
-      else if (eventType === 'issues') {
-        const action = payload.action;
-        let activityAction = 'GITHUB_ISSUE_UPDATED';
-        
-        if (action === 'opened') activityAction = 'GITHUB_ISSUE_OPENED';
-        if (action === 'closed') activityAction = 'GITHUB_ISSUE_CLOSED';
-        if (action === 'reopened') activityAction = 'GITHUB_ISSUE_REOPENED';
-        
-        await Activity.create({
-          project: project._id,
-          action: activityAction,
-          entityType: 'GITHUB',
-          entityId: project._id,
-          metadata: {
-            issueNumber: payload.issue.number,
-            title: payload.issue.title,
-            url: payload.issue.html_url,
-            author: payload.sender?.login
-          }
-        });
-        
-        // Trigger Module 11 synchronization logic
-        await githubSyncService.handleGithubIssueSync(project, payload);
-      }
-      else if (eventType === 'pull_request_review') {
-        if (payload.action === 'submitted') {
-          await Activity.create({
-            project: project._id,
-            action: 'GITHUB_PR_REVIEWED',
-            entityType: 'GITHUB',
-            entityId: project._id,
-            metadata: {
-              prNumber: payload.pull_request.number,
-              reviewState: payload.review.state,
-              reviewer: payload.sender?.login,
-              url: payload.review.html_url
-            }
-          });
+
+      // Enqueue the job and return fast
+      await addGithubJob('webhook-event', {
+        deliveryId,
+        eventType,
+        projectId: project._id.toString(),
+        payload: {
+          action: payload.action,
+          ref: payload.ref,
+          commits: payload.commits,
+          pusher: payload.pusher,
+          sender: payload.sender,
+          pull_request: payload.pull_request,
+          issue: payload.issue,
+          review: payload.review
         }
-      }
+      });
 
       res.status(200).send('Webhook processed');
     } catch (error) {

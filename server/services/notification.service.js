@@ -1,6 +1,7 @@
 import Notification from '../models/Notification.js';
 import { notificationPreferenceService } from './notificationPreference.service.js';
 import { socketService } from './socket.service.js';
+import { cacheService } from './cache.service.js';
 
 class NotificationService {
   /**
@@ -76,6 +77,9 @@ class NotificationService {
     // Populate actor for the real-time event
     const populated = await notification.populate('actor project', 'name avatar');
 
+    // Invalidate unread count cache
+    await cacheService.deleteCache(`notifications:${userId}:unread-count`);
+
     // Emit real-time notification
     socketService.emitToUser(userId.toString(), 'notification:new', populated);
 
@@ -111,10 +115,17 @@ class NotificationService {
   }
 
   async getUnreadCount(userId) {
-    const count = await Notification.countDocuments({
-      user: userId,
-      isRead: false
-    });
+    const cacheKey = `notifications:${userId}:unread-count`;
+    let count = await cacheService.getCache(cacheKey);
+
+    if (count === null) {
+      count = await Notification.countDocuments({
+        user: userId,
+        isRead: false
+      });
+      await cacheService.setCache(cacheKey, count, 300); // 5 min TTL
+    }
+
     return { count };
   }
 
@@ -129,6 +140,8 @@ class NotificationService {
       throw { status: 404, message: 'Notification not found' };
     }
 
+    await cacheService.deleteCache(`notifications:${userId}:unread-count`);
+
     return notification;
   }
 
@@ -137,6 +150,7 @@ class NotificationService {
       { user: userId, isRead: false },
       { $set: { isRead: true, readAt: new Date() } }
     );
+    await cacheService.deleteCache(`notifications:${userId}:unread-count`);
     return { success: true };
   }
 
@@ -146,6 +160,8 @@ class NotificationService {
     if (result.deletedCount === 0) {
       throw { status: 404, message: 'Notification not found' };
     }
+    
+    await cacheService.deleteCache(`notifications:${userId}:unread-count`);
     
     return { success: true };
   }

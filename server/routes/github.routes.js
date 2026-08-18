@@ -2,6 +2,7 @@ import express from 'express';
 import { githubController } from '../controllers/github.controller.js';
 import { requireAuth } from '../middleware/auth.middleware.js';
 import { requireProjectManager } from '../middleware/project.middleware.js';
+import { githubProxyLimiter } from '../middleware/rateLimiter.js';
 
 export const globalGithubRouter = express.Router();
 export const projectGithubRouter = express.Router({ mergeParams: true });
@@ -29,8 +30,8 @@ globalGithubRouter.get('/repositories', requireAuth, githubController.getReposit
 projectGithubRouter.post('/repository', requireProjectManager, githubController.connectRepository);
 projectGithubRouter.delete('/repository', requireProjectManager, githubController.disconnectRepository);
 
-projectGithubRouter.get('/repository', githubController.getProjectRepositoryInfo);
-projectGithubRouter.get('/branches', githubController.getBranches);
-projectGithubRouter.get('/commits', githubController.getCommits);
-projectGithubRouter.get('/pull-requests', githubController.getPullRequests);
-projectGithubRouter.get('/issues', githubController.getIssues);
+projectGithubRouter.get('/repository', githubProxyLimiter, githubController.getProjectRepositoryInfo);
+projectGithubRouter.get('/branches', githubProxyLimiter, githubController.getBranches);
+projectGithubRouter.get('/commits', githubProxyLimiter, githubController.getCommits);
+projectGithubRouter.get('/pull-requests', githubProxyLimiter, githubController.getPullRequests);
+projectGithubRouter.get('/issues', githubProxyLimiter, githubController.getIssues);
