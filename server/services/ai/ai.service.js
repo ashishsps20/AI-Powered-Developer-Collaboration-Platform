@@ -2,6 +2,7 @@ import AIConversation from '../../models/AIConversation.js';
 import AIMessage from '../../models/AIMessage.js';
 import AIUsageLog from '../../models/AIUsageLog.js';
 import contextBuilderService from './contextBuilder.service.js';
+import ragService from '../rag/rag.service.js';
 import llmService from './llm.service.js';
 import responseParserService from './responseParser.service.js';
 import { SYSTEM_PROMPT } from './prompts/projectAssistant.prompt.js';
@@ -52,7 +53,17 @@ class AIService {
         message
       );
 
-      // 4. Load Conversation History (last 10 messages)
+      // 4. Load RAG Knowledge (Semantic Search)
+      const ragKnowledge = await ragService.retrieveKnowledge(organizationId, projectId, message);
+      let ragContextText = '';
+      if (ragKnowledge.length > 0) {
+        ragContextText = '\n\nKNOWLEDGE BASE CONTEXT (Retrieved Documents):\n';
+        ragContextText += ragKnowledge.map((k, index) => 
+          `[Source ${index + 1}: ${k.title} - ${k.section}]\n${k.content}\n`
+        ).join('\n');
+      }
+
+      // 5. Load Conversation History (last 10 messages)
       const history = await AIMessage.find({ conversation: conversation._id })
         .sort({ createdAt: -1 })
         .limit(10)
@@ -60,11 +71,13 @@ class AIService {
       
       history.reverse(); // chronological order
 
-      // 5. Assemble Messages for LLM
+      // 6. Assemble Messages for LLM
+      const systemPromptContent = `${SYSTEM_PROMPT}\n\nPROJECT CONTEXT:\n${JSON.stringify(context, null, 2)}${ragContextText}`;
+      
       const llmMessages = [
         {
           role: 'system',
-          content: `${SYSTEM_PROMPT}\n\nPROJECT CONTEXT:\n${JSON.stringify(context, null, 2)}`
+          content: systemPromptContent
         },
         ...history.map(msg => ({
           role: msg.role === 'ASSISTANT' ? 'assistant' : 'user',
@@ -78,13 +91,27 @@ class AIService {
       // 7. Parse and Validate Response
       const parsed = responseParserService.parseResponse(llmResponse.content);
 
-      // 8. Save Assistant Message
+      // 8. Map sources and Save Assistant Message
+      const mappedSources = (parsed.sources || []).map(s => {
+        if (s.type === 'DOCUMENT' && s.id && ragKnowledge[parseInt(s.id) - 1]) {
+          const k = ragKnowledge[parseInt(s.id) - 1];
+          return {
+            type: 'DOCUMENT',
+            documentId: k.documentId,
+            chunkId: k.chunkId,
+            title: k.title,
+            section: k.section
+          };
+        }
+        return s;
+      });
+
       const assistantMessage = await AIMessage.create({
         conversation: conversation._id,
         role: 'ASSISTANT',
         content: parsed.answer,
         metadata: {
-          sources: parsed.sources || [],
+          sources: mappedSources,
         },
       });
 

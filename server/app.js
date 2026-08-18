@@ -29,16 +29,29 @@ app.use('/api', apiLimiter);
 import authRoutes from './routes/auth.routes.js';
 
 // Optional: Health check route
-app.get('/api/health', (req, res) => {
+app.get('/api/health', async (req, res) => {
   const redisClient = getRedisClient();
   const isRedisOk = redisClient && redisClient.status === 'ready';
+  
+  let isQdrantOk = false;
+  try {
+    const qdrantUrl = process.env.QDRANT_URL || 'http://localhost:6333';
+    // Use dynamic import or just basic fetch if available. In Node 18+ fetch is available.
+    // If not, we can use axios since it is installed.
+    const axios = (await import('axios')).default;
+    const qRes = await axios.get(`${qdrantUrl}/readyz`, { timeout: 1000 });
+    isQdrantOk = qRes.status === 200;
+  } catch (e) {
+    isQdrantOk = false;
+  }
 
   res.status(isRedisOk ? 200 : 503).json({
     status: isRedisOk ? 'ok' : 'degraded',
     services: {
       api: 'ok',
       mongodb: 'ok', // Assuming mongoose handles its own reconnection logic safely
-      redis: isRedisOk ? 'ok' : 'down'
+      redis: isRedisOk ? 'ok' : 'down',
+      qdrant: isQdrantOk ? 'ok' : 'down'
     }
   });
 });

@@ -5,6 +5,7 @@ import connectDB from './config/db.js';
 import { socketService } from './services/socket.service.js';
 import { initRedis, closeRedis } from './config/redis.js';
 import { initGithubWorker, closeGithubWorker } from './workers/github.worker.js';
+import { initKnowledgeWorker } from './workers/knowledge.worker.js';
 
 const PORT = process.env.PORT || 5000;
 
@@ -27,6 +28,16 @@ const startServer = async () => {
 
   // Initialize Workers
   initGithubWorker();
+  
+  let knowledgeWorker;
+  try {
+    knowledgeWorker = initKnowledgeWorker();
+  } catch(e) {
+    console.error('Failed to init knowledge worker', e);
+  }
+  
+  // Store globally so it can be closed if needed (or we can just let process exit handle it like we currently do, or export a close function)
+  global.knowledgeWorker = knowledgeWorker;
 };
 
 startServer();
@@ -37,6 +48,9 @@ const shutdown = async (signal) => {
   
   // Close workers first to stop accepting new jobs
   await closeGithubWorker();
+  if (global.knowledgeWorker) {
+    await global.knowledgeWorker.close();
+  }
 
   // Close Redis connections
   await closeRedis();
