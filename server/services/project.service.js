@@ -5,6 +5,8 @@ import ProjectMember from '../models/ProjectMember.js';
 import OrganizationMember from '../models/OrganizationMember.js';
 import User from '../models/User.js';
 import { activityService } from './activity.service.js';
+import { notificationService } from './notification.service.js';
+import { socketService } from './socket.service.js';
 
 class ProjectService {
   async createProject(organizationId, userId, data) {
@@ -258,6 +260,22 @@ class ProjectService {
           metadata: { userId, role }
         });
 
+        if (userId.toString() !== assignedByUserId.toString()) {
+          const actor = await User.findById(assignedByUserId);
+          const project = await Project.findById(projectId);
+          await notificationService.createNotification({
+            userId,
+            actorId: assignedByUserId,
+            projectId,
+            type: 'PROJECT_INVITATION',
+            entityType: 'PROJECT',
+            entityId: projectId,
+            message: `${actor.name} added you to project '${project.name}' as ${role}.`
+          });
+        }
+
+        socketService.emitToProject(projectId, 'project:member-added', { userId, role });
+
         return existingMembership;
       }
     }
@@ -279,6 +297,22 @@ class ProjectService {
       entityId: newMember._id,
       metadata: { userId, role }
     });
+
+    if (userId.toString() !== assignedByUserId.toString()) {
+      const actor = await User.findById(assignedByUserId);
+      const project = await Project.findById(projectId);
+      await notificationService.createNotification({
+        userId,
+        actorId: assignedByUserId,
+        projectId,
+        type: 'PROJECT_INVITATION',
+        entityType: 'PROJECT',
+        entityId: projectId,
+        message: `${actor.name} added you to project '${project.name}' as ${role}.`
+      });
+    }
+
+    socketService.emitToProject(projectId, 'project:member-added', { userId, role });
 
     return newMember;
   }
@@ -328,6 +362,8 @@ class ProjectService {
       entityId: membership._id,
       metadata: { userId: targetUserId }
     });
+
+    socketService.emitToProject(projectId, 'project:member-removed', { userId: targetUserId });
 
     return true;
   }
@@ -417,6 +453,22 @@ class ProjectService {
           metadata: { newManagerUserId }
         });
       }
+
+      if (newManagerUserId.toString() !== assignedByUserId.toString()) {
+        const actor = await User.findById(assignedByUserId);
+        const project = await Project.findById(projectId);
+        await notificationService.createNotification({
+          userId: newManagerUserId,
+          actorId: assignedByUserId,
+          projectId,
+          type: 'PROJECT_MANAGER_CHANGED',
+          entityType: 'PROJECT',
+          entityId: projectId,
+          message: `${actor.name} assigned you as Project Manager for '${project.name}'.`
+        });
+      }
+
+      socketService.emitToProject(projectId, 'project:manager-changed', { newManagerUserId });
 
       return true;
     } catch (error) {

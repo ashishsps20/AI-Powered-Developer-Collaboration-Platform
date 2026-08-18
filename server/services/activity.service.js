@@ -1,6 +1,7 @@
 import Activity from '../models/Activity.js';
 import Project from '../models/Project.js';
 import User from '../models/User.js';
+import { socketService } from './socket.service.js';
 
 class ActivityService {
   /**
@@ -21,7 +22,15 @@ class ActivityService {
       }
 
       const activities = await Activity.create([activityData], { session });
-      return activities[0];
+      
+      const populatedActivity = await Activity.findById(activities[0]._id).populate('actor', 'name avatar email');
+      if (populatedActivity && !session) {
+        socketService.emitActivity(projectId, populatedActivity);
+      }
+      // If there's a session, emitting right away might happen before transaction commits, 
+      // but it's acceptable for this basic implementation.
+      
+      return populatedActivity || activities[0];
     } catch (error) {
       console.error('Error creating activity:', error);
       // We generally don't want activity creation to break main flows if it fails,

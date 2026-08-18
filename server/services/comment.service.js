@@ -4,6 +4,9 @@ import Task from '../models/Task.js';
 import Issue from '../models/Issue.js';
 import ProjectMember from '../models/ProjectMember.js';
 import { activityService } from './activity.service.js';
+import User from '../models/User.js';
+import { notificationService } from './notification.service.js';
+import { socketService } from './socket.service.js';
 
 class CommentService {
   /**
@@ -126,7 +129,62 @@ class CommentService {
       throw error;
     }
 
-    return await Comment.findById(comment._id).populate('author', 'name avatar email');
+    const populatedComment = await Comment.findById(comment._id).populate('author', 'name avatar email');
+
+    try {
+      const actor = await User.findById(authorId);
+      
+      // 1. Mentions
+      for (const mentionId of validMentions) {
+        if (mentionId !== authorId.toString()) {
+          await notificationService.createNotification({
+            userId: mentionId,
+            actorId: authorId,
+            projectId,
+            type: 'MENTION',
+            entityType: 'COMMENT',
+            entityId: comment._id,
+            message: `${actor.name} mentioned you in a comment.`
+          });
+        }
+      }
+
+      // 2. Entity owner
+      let entityOwnerId = null;
+      let entityTitle = '';
+      if (entityType === 'TASK') {
+        const task = await Task.findById(entityId);
+        entityOwnerId = task?.assignedTo?.toString();
+        entityTitle = task?.title;
+      } else if (entityType === 'ISSUE') {
+        const issue = await Issue.findById(entityId);
+        entityOwnerId = issue?.assignedTo?.toString();
+        entityTitle = issue?.title;
+      }
+
+      if (entityOwnerId && entityOwnerId !== authorId.toString() && !validMentions.includes(entityOwnerId)) {
+        await notificationService.createNotification({
+          userId: entityOwnerId,
+          actorId: authorId,
+          projectId,
+          type: `COMMENT_ON_${entityType}`,
+          entityType: 'COMMENT',
+          entityId: comment._id,
+          message: `${actor.name} commented on '${entityTitle}'.`
+        });
+      }
+
+      socketService.emitComment(projectId, {
+        commentId: comment._id,
+        projectId,
+        action: 'created',
+        comment: populatedComment
+      });
+    } catch (e) {
+      console.error('Error sending comment notifications/sockets:', e);
+    }
+
+    return populatedComment;
   }
 
   /**

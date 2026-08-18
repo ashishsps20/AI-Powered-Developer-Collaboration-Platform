@@ -23,7 +23,8 @@
     "joi": "^18.2.3",
     "jsonwebtoken": "^9.0.3",
     "mongoose": "^9.9.2",
-    "slugify": "^1.6.9"
+    "slugify": "^1.6.9",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "cross-env": "^10.1.0",

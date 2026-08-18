@@ -6,6 +6,7 @@ import IssueGitHubLink from '../models/IssueGitHubLink.js';
 import ProjectGitHubSettings from '../models/ProjectGitHubSettings.js';
 import { githubService } from './github.service.js';
 import { activityService } from './activity.service.js';
+import { notificationService } from './notification.service.js';
 
 class GithubSyncService {
   async getSyncSettings(projectId) {
@@ -83,6 +84,18 @@ class GithubSyncService {
           pullRequestUrl: pr.html_url,
         }
       });
+
+      if (task.assignedTo && task.assignedTo.toString() !== userId.toString()) {
+        await notificationService.createNotification({
+          userId: task.assignedTo,
+          actorId: userId,
+          projectId,
+          type: 'GITHUB_PR_LINKED',
+          entityType: 'GITHUB_PR',
+          entityId: link._id,
+          message: `GitHub PR #${pr.number} was linked to your task '${task.title}'.`
+        });
+      }
 
       return {
         taskId,
@@ -395,8 +408,21 @@ class GithubSyncService {
       }
     }
 
-    if (action === 'closed' && pr.merged && settings.autoCompleteTaskOnPRMerge) {
-      if (task.status !== 'DONE' && task.status !== 'ARCHIVED') {
+    if (action === 'closed' && pr.merged) {
+      if (task.assignedTo) {
+        await notificationService.createNotification({
+          userId: task.assignedTo,
+          actorId: null,
+          projectId: project._id,
+          type: 'GITHUB_PR_MERGED',
+          entityType: 'GITHUB_PR',
+          entityId: link._id,
+          message: `GitHub PR #${pr.number} was merged for your task '${task.title}'.`,
+          metadata: { deliveryId: pr.id }
+        });
+      }
+
+      if (settings.autoCompleteTaskOnPRMerge && task.status !== 'DONE' && task.status !== 'ARCHIVED') {
         const oldStatus = task.status;
         task.status = 'DONE';
         task.completedAt = new Date();
@@ -415,6 +441,19 @@ class GithubSyncService {
             newStatus: 'DONE',
           }
         });
+
+        if (task.assignedTo) {
+          await notificationService.createNotification({
+            userId: task.assignedTo,
+            actorId: null,
+            projectId: project._id,
+            type: 'GITHUB_SYNC',
+            entityType: 'TASK',
+            entityId: task._id,
+            message: `Your task '${task.title}' was marked DONE after GitHub PR #${pr.number} was merged.`,
+            metadata: { deliveryId: `${pr.id}-sync` }
+          });
+        }
       }
     }
   }

@@ -1,6 +1,9 @@
 import Issue from '../models/Issue.js';
 import ProjectMember from '../models/ProjectMember.js';
+import User from '../models/User.js';
 import { activityService } from './activity.service.js';
+import { notificationService } from './notification.service.js';
+import { socketService } from './socket.service.js';
 
 class IssueService {
   async createIssue(projectId, userId, data) {
@@ -34,7 +37,29 @@ class IssueService {
       entityId: issue._id
     });
 
-    return issue.populate('assignedTo reportedBy', 'name email avatar');
+    const populatedIssue = await issue.populate('assignedTo reportedBy', 'name email avatar');
+
+    if (assignedTo && assignedTo.toString() !== userId.toString()) {
+      const actor = await User.findById(userId);
+      await notificationService.createNotification({
+        userId: assignedTo,
+        actorId: userId,
+        projectId,
+        type: 'ISSUE_ASSIGNED',
+        entityType: 'ISSUE',
+        entityId: issue._id,
+        message: `${actor.name} assigned issue '${issue.title}' to you.`
+      });
+    }
+
+    socketService.emitIssueUpdate(projectId, {
+      issueId: issue._id,
+      projectId,
+      action: 'created',
+      issue: populatedIssue
+    });
+
+    return populatedIssue;
   }
 
   async getIssues(projectId, filters = {}) {
@@ -133,7 +158,29 @@ class IssueService {
       entityId: issue._id
     });
 
-    return issue.populate('assignedTo reportedBy', 'name email avatar');
+    const populatedIssue = await issue.populate('assignedTo reportedBy', 'name email avatar');
+
+    if (data.assignedTo && data.assignedTo.toString() !== oldAssignee?.toString() && data.assignedTo.toString() !== userId.toString()) {
+      const actor = await User.findById(userId);
+      await notificationService.createNotification({
+        userId: data.assignedTo,
+        actorId: userId,
+        projectId: issue.project,
+        type: 'ISSUE_ASSIGNED',
+        entityType: 'ISSUE',
+        entityId: issue._id,
+        message: `${actor.name} assigned issue '${issue.title}' to you.`
+      });
+    }
+
+    socketService.emitIssueUpdate(issue.project.toString(), {
+      issueId: issue._id,
+      projectId: issue.project,
+      action: 'updated',
+      changes: data
+    });
+
+    return populatedIssue;
   }
 
   async deleteIssue(issue, userId) {
@@ -145,6 +192,12 @@ class IssueService {
       action: 'ISSUE_DELETED',
       entityType: 'ISSUE',
       entityId: issue._id
+    });
+
+    socketService.emitIssueUpdate(issue.project.toString(), {
+      issueId: issue._id,
+      projectId: issue.project,
+      action: 'deleted'
     });
   }
 }

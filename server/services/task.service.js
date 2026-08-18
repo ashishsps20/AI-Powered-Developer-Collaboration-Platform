@@ -1,6 +1,9 @@
 import Task from '../models/Task.js';
 import ProjectMember from '../models/ProjectMember.js';
+import User from '../models/User.js';
 import { activityService } from './activity.service.js';
+import { notificationService } from './notification.service.js';
+import { socketService } from './socket.service.js';
 
 class TaskService {
   async createTask(projectId, userId, data) {
@@ -41,7 +44,29 @@ class TaskService {
       entityId: task._id
     });
 
-    return task.populate('assignedTo createdBy', 'name email avatar');
+    const populatedTask = await task.populate('assignedTo createdBy', 'name email avatar');
+
+    if (assignedTo && assignedTo.toString() !== userId.toString()) {
+      const actor = await User.findById(userId);
+      await notificationService.createNotification({
+        userId: assignedTo,
+        actorId: userId,
+        projectId,
+        type: 'TASK_ASSIGNED',
+        entityType: 'TASK',
+        entityId: task._id,
+        message: `${actor.name} assigned '${task.title}' to you.`
+      });
+    }
+
+    socketService.emitTaskUpdate(projectId, {
+      taskId: task._id,
+      projectId,
+      action: 'created',
+      task: populatedTask
+    });
+
+    return populatedTask;
   }
 
   async getTasks(projectId, filters = {}) {
@@ -125,7 +150,29 @@ class TaskService {
       entityId: task._id
     });
 
-    return task.populate('assignedTo', 'name email avatar');
+    const populatedTask = await task.populate('assignedTo', 'name email avatar');
+
+    if (data.assignedTo && data.assignedTo.toString() !== oldAssignee?.toString() && data.assignedTo.toString() !== userId.toString()) {
+      const actor = await User.findById(userId);
+      await notificationService.createNotification({
+        userId: data.assignedTo,
+        actorId: userId,
+        projectId: task.project,
+        type: 'TASK_ASSIGNED',
+        entityType: 'TASK',
+        entityId: task._id,
+        message: `${actor.name} assigned '${task.title}' to you.`
+      });
+    }
+
+    socketService.emitTaskUpdate(task.project.toString(), {
+      taskId: task._id,
+      projectId: task.project,
+      action: 'updated',
+      changes: data
+    });
+
+    return populatedTask;
   }
 
   async updateTaskStatus(task, status, userId) {
@@ -155,7 +202,16 @@ class TaskService {
       }
     });
 
-    return task.populate('assignedTo', 'name email avatar');
+    const populatedTask = await task.populate('assignedTo', 'name email avatar');
+
+    socketService.emitTaskUpdate(task.project.toString(), {
+      taskId: task._id,
+      projectId: task.project,
+      action: 'updated',
+      changes: { status }
+    });
+
+    return populatedTask;
   }
 
   async updateTaskPosition(task, status, position, userId) {
@@ -194,7 +250,16 @@ class TaskService {
       });
     }
 
-    return task.populate('assignedTo', 'name email avatar');
+    const populatedTask = await task.populate('assignedTo', 'name email avatar');
+
+    socketService.emitTaskUpdate(task.project.toString(), {
+      taskId: task._id,
+      projectId: task.project,
+      action: 'updated',
+      changes: { status, position }
+    });
+
+    return populatedTask;
   }
 
   async deleteTask(task, userId) {
@@ -206,6 +271,12 @@ class TaskService {
       action: 'TASK_DELETED',
       entityType: 'TASK',
       entityId: task._id
+    });
+
+    socketService.emitTaskUpdate(task.project.toString(), {
+      taskId: task._id,
+      projectId: task.project,
+      action: 'deleted'
     });
   }
 }
