@@ -8,6 +8,7 @@ import commentRoutes from './comment.routes.js';
 import activityRoutes from './activity.routes.js';
 import { projectGithubRouter } from './github.routes.js';
 import githubSyncRoutes from './githubSync.routes.js';
+import aiRoutes from './ai.routes.js';
 
 // Note: mergeParams is required because the router is mounted with /:organizationId/projects
 const router = express.Router({ mergeParams: true });
@@ -53,5 +54,8 @@ router.use('/:projectId/github', requireProjectMember, projectGithubRouter);
 
 // Mount GitHub Sync routes
 router.use('/:projectId', requireProjectMember, githubSyncRoutes);
+
+// Mount AI routes
+router.use('/:projectId/ai', requireProjectMember, aiRoutes);
 
 export default router;

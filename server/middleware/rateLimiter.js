@@ -82,3 +82,9 @@ export const githubProxyLimiter = createLimiter({
   max: parseInt(process.env.GITHUB_RATE_LIMIT_MAX) || 30,
   prefix: 'github'
 });
+
+export const aiLimiter = createLimiter({
+  windowMs: 60 * 1000, // 1 minute
+  max: parseInt(process.env.AI_RATE_LIMIT_MAX) || 10,
+  prefix: 'ai'
+});
