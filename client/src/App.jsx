@@ -30,6 +30,7 @@ import ProjectGithub from './pages/ProjectGithub';
 import Integrations from './pages/Integrations';
 import Notifications from './pages/Notifications';
 import NotificationPreferences from './pages/NotificationPreferences';
+import ProjectAI from './pages/ProjectAI';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -148,6 +149,7 @@ function App() {
             <Route path="activity" element={<ProjectActivity />} />
             <Route path="members" element={<ProjectMembers />} />
             <Route path="github" element={<ProjectGithub />} />
+            <Route path="ai" element={<ProjectAI />} />
           </Route>
           <Route 
             path="/app/invitations" 

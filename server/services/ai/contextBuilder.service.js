@@ -41,7 +41,7 @@ class ContextBuilderService {
     const tasks = await Task.find({ project: projectId })
       .sort({ status: 1, priority: -1, updatedAt: -1 })
       .limit(20)
-      .populate('assignees', 'name')
+      .populate('assignedTo', 'name')
       .lean();
 
     const formattedTasks = tasks.map(t => ({
@@ -49,14 +49,14 @@ class ContextBuilderService {
       title: t.title,
       status: t.status,
       priority: t.priority,
-      assignees: t.assignees.map(a => a.name)
+      assignedTo: t.assignedTo?.name || 'Unassigned'
     }));
 
     // 5. Get Issues (Prioritize open, high priority)
     const issues = await Issue.find({ project: projectId, status: { $ne: 'CLOSED' } })
       .sort({ priority: -1, updatedAt: -1 })
       .limit(15)
-      .populate('assignees', 'name')
+      .populate('assignedTo', 'name')
       .lean();
 
     const formattedIssues = issues.map(i => ({
@@ -64,20 +64,20 @@ class ContextBuilderService {
       title: i.title,
       status: i.status,
       priority: i.priority,
-      assignees: i.assignees.map(a => a.name)
+      assignedTo: i.assignedTo?.name || 'Unassigned'
     }));
 
     // 6. Get Recent Activity (Last 20 events)
     const activities = await Activity.find({ project: projectId })
       .sort({ createdAt: -1 })
       .limit(20)
-      .populate('user', 'name')
+      .populate('actor', 'name')
       .lean();
 
     const formattedActivities = activities.map(a => ({
       action: a.action,
       entityType: a.entityType,
-      user: a.user?.name || 'System',
+      user: a.actor?.name || 'System',
       timestamp: a.createdAt,
     }));
 
