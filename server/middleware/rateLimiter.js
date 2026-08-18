@@ -2,12 +2,13 @@ import { rateLimit, MemoryStore, ipKeyGenerator } from 'express-rate-limit';
 import RedisStore from 'rate-limit-redis';
 import { getRedisClient } from '../config/redis.js';
 
-// Fallback memory store when Redis is unavailable
-const memoryStore = new MemoryStore();
+// Rate limiters
 
 const createLimiter = (options) => {
+  const windowMs = options.windowMs || 15 * 60 * 1000;
+  
   return rateLimit({
-    windowMs: options.windowMs || 15 * 60 * 1000,
+    windowMs,
     max: options.max || 100,
     standardHeaders: true,
     legacyHeaders: false,
@@ -22,44 +23,42 @@ const createLimiter = (options) => {
       });
     },
     store: {
-      // We implement a custom adapter to fallback gracefully to memory if Redis is down
+      init(initOptions) {
+        this.memoryStore = new MemoryStore();
+        this.memoryStore.init(initOptions);
+        
+        this.redisStore = new RedisStore({
+          sendCommand: (...args) => {
+            const client = getRedisClient();
+            if (client) return client.call(...args);
+            throw new Error('Redis client unavailable');
+          },
+          prefix: `rate-limit:${options.prefix || 'api'}:`
+        });
+        this.redisStore.init(initOptions);
+      },
       async increment(key) {
         const client = getRedisClient();
         if (client && client.status === 'ready') {
-          // Initialize a temporary RedisStore instance just to process this request
-          // (In a real app you'd instantiate the store once, but we need graceful failover dynamically)
-          const redisStore = new RedisStore({
-            sendCommand: (...args) => client.call(...args),
-            prefix: `rate-limit:${options.prefix || 'api'}:`
-          });
-          return redisStore.increment(key);
+          return this.redisStore.increment(key);
         } else {
-          // Fallback to memory
-          return memoryStore.increment(key);
+          return this.memoryStore.increment(key);
         }
       },
       async decrement(key) {
         const client = getRedisClient();
         if (client && client.status === 'ready') {
-          const redisStore = new RedisStore({
-            sendCommand: (...args) => client.call(...args),
-            prefix: `rate-limit:${options.prefix || 'api'}:`
-          });
-          return redisStore.decrement(key);
+          return this.redisStore.decrement(key);
         } else {
-          return memoryStore.decrement(key);
+          return this.memoryStore.decrement(key);
         }
       },
       async resetKey(key) {
         const client = getRedisClient();
         if (client && client.status === 'ready') {
-          const redisStore = new RedisStore({
-            sendCommand: (...args) => client.call(...args),
-            prefix: `rate-limit:${options.prefix || 'api'}:`
-          });
-          return redisStore.resetKey(key);
+          return this.redisStore.resetKey(key);
         } else {
-          return memoryStore.resetKey(key);
+          return this.memoryStore.resetKey(key);
         }
       }
     }

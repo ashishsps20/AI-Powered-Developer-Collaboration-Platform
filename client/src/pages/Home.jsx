@@ -10,15 +10,21 @@ const Home = () => {
     const checkBackend = async () => {
       try {
         const response = await api.get('/health');
-        if (response.data?.success) {
+        if (response.data?.success || response.data?.status === 'ok') {
           setBackendStatus('success');
         } else {
           setBackendStatus('error');
-          setErrorDetails('Backend responded but with an error status.');
+          setErrorDetails('Backend responded but with an unknown status.');
         }
       } catch (err) {
-        setBackendStatus('error');
-        setErrorDetails('Backend unavailable. Please make sure the server is running.');
+        if (err.response && err.response.status === 503 && err.response.data?.status === 'degraded') {
+          // The backend is running, but Redis is down.
+          setBackendStatus('degraded');
+          setErrorDetails('Backend is running in degraded mode (Redis cache is offline). The core database is fully functional.');
+        } else {
+          setBackendStatus('error');
+          setErrorDetails('Backend unavailable. Please make sure the server is running.');
+        }
       }
     };
 
@@ -49,12 +55,13 @@ const Home = () => {
             <span className="text-gray-600 font-medium">Backend Connection</span>
             {backendStatus === 'loading' && <StatusBadge status="loading" text="Checking backend..." />}
             {backendStatus === 'success' && <StatusBadge status="success" text="Connected" />}
+            {backendStatus === 'degraded' && <StatusBadge status="warning" text="Degraded" />}
             {backendStatus === 'error' && <StatusBadge status="error" text="Unable to connect" />}
           </div>
         </div>
 
-        {backendStatus === 'error' && (
-          <div className="mt-4 p-3 bg-red-50 border border-red-100 rounded-md text-sm text-red-700">
+        {(backendStatus === 'error' || backendStatus === 'degraded') && (
+          <div className={`mt-4 p-3 border rounded-md text-sm ${backendStatus === 'error' ? 'bg-red-50 border-red-100 text-red-700' : 'bg-yellow-50 border-yellow-100 text-yellow-700'}`}>
             {errorDetails}
           </div>
         )}

@@ -31,7 +31,30 @@ import Integrations from './pages/Integrations';
 import Notifications from './pages/Notifications';
 import NotificationPreferences from './pages/NotificationPreferences';
 
-const queryClient = new QueryClient();
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      retry: (failureCount, error) => {
+        // Do not retry these specific HTTP status codes
+        const noRetryStatuses = [400, 401, 403, 404, 409, 422, 429];
+        
+        if (error?.response?.status && noRetryStatuses.includes(error.response.status)) {
+          return false;
+        }
+        
+        // Only retry Server Errors up to 2 times
+        if (error?.response?.status >= 500) {
+          return failureCount < 2;
+        }
+
+        // Default retry limit
+        return failureCount < 3;
+      },
+      // Give a slight backoff delay
+      retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000),
+    },
+  },
+});
 
 function App() {
   const { initializeAuth, isInitialized } = useAuthStore();

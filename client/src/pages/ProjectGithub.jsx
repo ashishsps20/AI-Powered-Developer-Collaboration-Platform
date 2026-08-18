@@ -8,6 +8,7 @@ import useAuthStore from '../store/authStore';
 import RepositorySelector from '../components/github/RepositorySelector';
 import ConnectedRepository from '../components/github/ConnectedRepository';
 import GithubSyncSettings from '../components/github/GithubSyncSettings';
+import GitHubSyncStatus from '../components/github/GitHubSyncStatus';
 import { Code } from 'lucide-react';
 
 const ProjectGithub = () => {
@@ -86,11 +87,14 @@ const ProjectGithub = () => {
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">GitHub Integration</h2>
-        <p className="mt-1 text-sm text-gray-500">
-          Link your GitHub repository to track commits, branches, and pull requests directly within your project.
-        </p>
+      <div className="mb-6 flex justify-between items-start">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">GitHub Integration</h2>
+          <p className="mt-1 text-sm text-gray-500">
+            Link your GitHub repository to track commits, branches, and pull requests directly within your project.
+          </p>
+        </div>
+        {isConnected && <GitHubSyncStatus projectId={projectId} />}
       </div>
 
       {isConnected ? (
