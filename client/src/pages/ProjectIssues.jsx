@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import useProjectStore from '../store/projectStore';
 import useUIStore from '../store/uiStore';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { issueService } from '../services/issueService';
 import CreateIssueModal from '../components/issues/CreateIssueModal';
 import IssueDetailModal from '../components/issues/IssueDetailModal';
@@ -17,39 +18,27 @@ const ProjectIssues = () => {
     setSelectedIssueId
   } = useUIStore();
 
-  const [issues, setIssues] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
 
-  const fetchIssues = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const data = await issueService.getIssues(organizationId, projectId, issueFilters);
-      setIssues(data);
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to load issues');
-    } finally {
-      setIsLoading(false);
-    }
+  const { data: issues = [], isLoading, error: queryError } = useQuery({
+    queryKey: ['project-issues', projectId, issueFilters],
+    queryFn: () => issueService.getIssues(organizationId, projectId, issueFilters),
+    enabled: !!organizationId && !!projectId,
+  });
+
+  const [localError, setLocalError] = useState('');
+  const error = localError || (queryError ? queryError.response?.data?.message || queryError.message : '');
+
+  const handleIssueCreated = () => {
+    queryClient.invalidateQueries(['project-issues', projectId]);
   };
 
-  useEffect(() => {
-    if (organizationId && projectId) {
-      fetchIssues();
-    }
-  }, [organizationId, projectId, issueFilters]);
-
-  const handleIssueCreated = (newIssue) => {
-    setIssues(prev => [newIssue, ...prev]);
+  const handleIssueUpdated = () => {
+    queryClient.invalidateQueries(['project-issues', projectId]);
   };
 
-  const handleIssueUpdated = (updatedIssue) => {
-    setIssues(prev => prev.map(i => i._id === updatedIssue._id ? updatedIssue : i));
-  };
-
-  const handleIssueDeleted = (issueId) => {
-    setIssues(prev => prev.filter(i => i._id !== issueId));
+  const handleIssueDeleted = () => {
+    queryClient.invalidateQueries(['project-issues', projectId]);
   };
 
   if (!currentProject) return null;

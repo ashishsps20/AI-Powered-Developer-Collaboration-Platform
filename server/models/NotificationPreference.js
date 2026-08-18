@@ -12,6 +12,10 @@ const notificationPreferenceSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+    issueAssignments: {
+      type: Boolean,
+      default: true,
+    },
     mentions: {
       type: Boolean,
       default: true,

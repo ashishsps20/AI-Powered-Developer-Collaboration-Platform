@@ -31,7 +31,7 @@ class NotificationService {
     // Map notification types to preference flags
     const typeToPrefMap = {
       TASK_ASSIGNED: 'taskAssignments',
-      ISSUE_ASSIGNED: 'taskAssignments', // Treated together
+      ISSUE_ASSIGNED: 'issueAssignments',
       MENTION: 'mentions',
       COMMENT_ON_TASK: 'comments',
       COMMENT_ON_ISSUE: 'comments',

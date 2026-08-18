@@ -4,6 +4,7 @@ import useProjectStore from '../store/projectStore';
 import useOrgStore from '../store/orgStore';
 import useUIStore from '../store/uiStore';
 import useAuthStore from '../store/authStore';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { taskService } from '../services/taskService';
 import KanbanBoard from '../components/tasks/KanbanBoard';
 import CreateTaskModal from '../components/tasks/CreateTaskModal';
@@ -21,44 +22,37 @@ const ProjectTasks = () => {
     selectedTaskId
   } = useUIStore();
 
-  const [tasks, setTasks] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState('');
+  const queryClient = useQueryClient();
+
+  const { data: tasks = [], isLoading, error: queryError } = useQuery({
+    queryKey: ['project-tasks', projectId, taskFilters],
+    queryFn: () => taskService.getTasks(organizationId, projectId, taskFilters),
+    enabled: !!organizationId && !!projectId,
+  });
+
+  const [localError, setLocalError] = useState('');
+  const error = localError || (queryError ? queryError.response?.data?.message || queryError.message : '');
 
   // Calculate permissions
   const currentUserMembership = projectMembers.find(m => m.user.id === user?.id);
   const projectRole = currentUserMembership?.role || null;
   const isManagerOrOwner = orgRole === 'OWNER' || projectRole === 'PROJECT_MANAGER';
 
-  const fetchTasks = async () => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const data = await taskService.getTasks(organizationId, projectId, taskFilters);
-      setTasks(data);
-    } catch (err) {
-      setError(err.response?.data?.message || err.message || 'Failed to load tasks');
-    } finally {
-      setIsLoading(false);
-    }
+  // Wrapper for Kanban optimistic updates
+  const setTasks = (updater) => {
+    queryClient.setQueryData(['project-tasks', projectId, taskFilters], updater);
   };
 
-  useEffect(() => {
-    if (organizationId && projectId) {
-      fetchTasks();
-    }
-  }, [organizationId, projectId, taskFilters]);
-
-  const handleTaskCreated = (newTask) => {
-    setTasks(prev => [...prev, newTask]);
+  const handleTaskCreated = () => {
+    queryClient.invalidateQueries(['project-tasks', projectId]);
   };
 
-  const handleTaskUpdated = (updatedTask) => {
-    setTasks(prev => prev.map(t => t._id === updatedTask._id ? updatedTask : t));
+  const handleTaskUpdated = () => {
+    queryClient.invalidateQueries(['project-tasks', projectId]);
   };
 
-  const handleTaskDeleted = (taskId) => {
-    setTasks(prev => prev.filter(t => t._id !== taskId));
+  const handleTaskDeleted = () => {
+    queryClient.invalidateQueries(['project-tasks', projectId]);
   };
 
   if (!currentProject) return null;
@@ -175,7 +169,7 @@ const ProjectTasks = () => {
             projectId={projectId} 
             tasks={tasks} 
             setTasks={setTasks} 
-            setError={setError}
+            setError={setLocalError}
           />
         )}
       </div>

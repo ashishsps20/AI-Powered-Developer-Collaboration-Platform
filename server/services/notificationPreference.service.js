@@ -20,7 +20,7 @@ class NotificationPreferenceService {
   async updatePreferences(userId, updateData) {
     // Only allow updating boolean flags
     const allowedUpdates = {};
-    const flags = ['taskAssignments', 'mentions', 'comments', 'githubEvents', 'projectUpdates'];
+    const flags = ['taskAssignments', 'issueAssignments', 'mentions', 'comments', 'githubEvents', 'projectUpdates'];
     
     for (const flag of flags) {
       if (updateData[flag] !== undefined) {

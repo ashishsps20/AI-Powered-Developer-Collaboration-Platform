@@ -1,6 +1,8 @@
 import React from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { SocketProvider } from './components/realtime/SocketProvider';
 import ApplicationShell from './layouts/ApplicationShell';
 import Home from './pages/Home';
 
@@ -26,6 +28,8 @@ import { useEffect } from 'react';
 import ProjectActivity from './pages/ProjectActivity';
 import ProjectGithub from './pages/ProjectGithub';
 import Integrations from './pages/Integrations';
+import Notifications from './pages/Notifications';
+import NotificationPreferences from './pages/NotificationPreferences';
 
 const queryClient = new QueryClient();
 
@@ -47,7 +51,8 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <ErrorBoundary>
-        <Routes>
+        <SocketProvider>
+          <Routes>
             <Route path="/" element={<ApplicationShell />}>
             <Route index element={<Home />} />
             {/* Placeholder routes for future modules */}
@@ -137,6 +142,22 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route 
+            path="/app/notifications" 
+            element={
+              <ProtectedRoute>
+                <Notifications />
+              </ProtectedRoute>
+            } 
+          />
+          <Route 
+            path="/app/settings/notifications" 
+            element={
+              <ProtectedRoute>
+                <NotificationPreferences />
+              </ProtectedRoute>
+            } 
+          />
           
           {/* Redirect all /app/* fallbacks to /app for workspace selection */}
           <Route 
@@ -148,6 +169,8 @@ function App() {
             } 
           />
         </Routes>
+          <Toaster position="bottom-right" />
+        </SocketProvider>
       </ErrorBoundary>
     </QueryClientProvider>
   );

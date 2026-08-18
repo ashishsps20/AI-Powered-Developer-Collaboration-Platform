@@ -21,8 +21,17 @@ class SocketService {
     this.io.use(async (socket, next) => {
       try {
         // Prefer token from auth payload or headers
-        const token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
+        let token = socket.handshake.auth?.token || socket.handshake.headers?.authorization?.split(' ')[1];
         
+        // Check cookies if not found
+        if (!token && socket.handshake.headers?.cookie) {
+          const cookieStr = socket.handshake.headers.cookie;
+          const match = cookieStr.match(/jwt=([^;]+)/);
+          if (match) {
+            token = match[1];
+          }
+        }
+
         if (!token) {
           return next(new Error('Authentication error: No token provided'));
         }

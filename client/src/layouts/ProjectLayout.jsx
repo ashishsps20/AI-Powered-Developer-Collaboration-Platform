@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { Outlet, useParams, Link, useLocation, useNavigate } from 'react-router-dom';
 import useProjectStore from '../store/projectStore';
 import useOrgStore from '../store/orgStore';
+import { useProjectRealtime } from '../hooks/useProjectRealtime';
 
 const ProjectLayout = () => {
   const { organizationId, projectId } = useParams();
@@ -10,6 +11,8 @@ const ProjectLayout = () => {
   
   const { currentOrganization, setCurrentOrganization } = useOrgStore();
   const { currentProject, fetchProject, fetchProjectMembers, isLoading, error } = useProjectStore();
+
+  useProjectRealtime(projectId);
 
   useEffect(() => {
     // Ensure org is loaded
