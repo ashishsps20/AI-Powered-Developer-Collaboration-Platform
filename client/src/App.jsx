@@ -31,6 +31,8 @@ import Integrations from './pages/Integrations';
 import Notifications from './pages/Notifications';
 import NotificationPreferences from './pages/NotificationPreferences';
 import ProjectAI from './pages/ProjectAI';
+import ProjectKnowledge from './pages/ProjectKnowledge';
+import KnowledgeDocument from './pages/KnowledgeDocument';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -149,6 +151,8 @@ function App() {
             <Route path="activity" element={<ProjectActivity />} />
             <Route path="members" element={<ProjectMembers />} />
             <Route path="github" element={<ProjectGithub />} />
+            <Route path="knowledge" element={<ProjectKnowledge />} />
+            <Route path="knowledge/:documentId" element={<KnowledgeDocument />} />
             <Route path="ai" element={<ProjectAI />} />
           </Route>
           <Route 

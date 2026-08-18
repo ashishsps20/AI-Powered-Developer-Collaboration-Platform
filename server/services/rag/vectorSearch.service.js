@@ -7,8 +7,14 @@ class VectorSearchService {
       url: process.env.QDRANT_URL || 'http://localhost:6333',
       apiKey: process.env.QDRANT_API_KEY,
     });
-    this.collectionName = process.env.QDRANT_COLLECTION || 'project_knowledge';
-    this.dimension = parseInt(process.env.EMBEDDING_DIMENSION) || 1536;
+  }
+
+  get collectionName() {
+    return process.env.QDRANT_COLLECTION || 'project_knowledge';
+  }
+
+  get dimension() {
+    return parseInt(process.env.EMBEDDING_DIMENSION) || 1536;
   }
 
   /**
@@ -60,8 +66,8 @@ class VectorSearchService {
 
     // 2. Search Qdrant with filters
     try {
-      const searchResults = await this.client.search(this.collectionName, {
-        vector: queryVector,
+      const searchResults = await this.client.query(this.collectionName, {
+        query: queryVector,
         limit,
         score_threshold: scoreThreshold,
         filter: {
@@ -79,7 +85,9 @@ class VectorSearchService {
         with_payload: true,
       });
 
-      return searchResults.map(result => ({
+      if (!searchResults || !searchResults.points) return [];
+
+      return searchResults.points.map(result => ({
         id: result.id,
         score: result.score,
         payload: result.payload,

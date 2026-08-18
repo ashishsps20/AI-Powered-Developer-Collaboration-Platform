@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FileText, CheckCircle2, Activity, GitCommit, GitBranch } from 'lucide-react';
+import { FileText, CheckCircle2, Activity, GitCommit, GitBranch, BookOpen } from 'lucide-react';
 
 const AISourceList = ({ sources }) => {
   const { organizationId, projectId } = useParams();
@@ -31,6 +31,11 @@ const AISourceList = ({ sources }) => {
         icon = <GitBranch size={14} className="text-gray-700" />;
         text = `GitHub Data`;
         link = `/app/org/${organizationId}/projects/${projectId}/github`;
+        break;
+      case 'DOCUMENT':
+        icon = <BookOpen size={14} className="text-emerald-600" />;
+        text = `Knowledge Doc`;
+        link = source.id ? `/app/org/${organizationId}/projects/${projectId}/knowledge/${source.id}` : `/app/org/${organizationId}/projects/${projectId}/knowledge`;
         break;
       default:
         icon = <FileText size={14} className="text-gray-500" />;

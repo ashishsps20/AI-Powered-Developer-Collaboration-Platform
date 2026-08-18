@@ -16,7 +16,7 @@ export const createManualDocument = async (req, res, next) => {
     const document = await KnowledgeDocument.create({
       organization: organizationId,
       project: projectId,
-      uploadedBy: req.user._id,
+      uploadedBy: req.user.id,
       title,
       description: content, // We store manual content here for processing later
       sourceType: 'MANUAL',
@@ -57,7 +57,7 @@ export const uploadDocument = async (req, res, next) => {
     const document = await KnowledgeDocument.create({
       organization: organizationId,
       project: projectId,
-      uploadedBy: req.user._id,
+      uploadedBy: req.user.id,
       title,
       description,
       sourceType: 'UPLOAD',

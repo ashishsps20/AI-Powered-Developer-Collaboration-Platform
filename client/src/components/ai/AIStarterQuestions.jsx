@@ -6,8 +6,10 @@ const starterQuestions = [
   "What should I work on next?",
   "What are the biggest blockers?",
   "Summarize recent activity.",
-  "What are the highest priority issues?",
-  "What changed recently on GitHub?"
+  "According to our architecture documentation, how does authentication work?",
+  "What does our API documentation say about authorization?",
+  "What database architecture is documented?",
+  "How does the project handle token refresh?"
 ];
 
 const AIStarterQuestions = ({ onSelectQuestion }) => {

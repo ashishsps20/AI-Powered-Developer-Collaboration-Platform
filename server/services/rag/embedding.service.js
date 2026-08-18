@@ -1,11 +1,14 @@
 import axios from 'axios';
 
 class EmbeddingService {
-  constructor() {
-    this.model = process.env.EMBEDDING_MODEL || 'text-embedding-3-small';
-    this.dimension = parseInt(process.env.EMBEDDING_DIMENSION) || 1536;
-    // Default to OpenAI compatibility
-    this.providerUrl = process.env.EMBEDDING_API_URL || 'https://api.openai.com/v1/embeddings';
+  get config() {
+    const provider = process.env.EMBEDDING_PROVIDER || 'openai';
+    return {
+      provider,
+      model: process.env.EMBEDDING_MODEL || (provider === 'gemini' ? 'gemini-embedding-2' : 'text-embedding-3-small'),
+      dimension: parseInt(process.env.EMBEDDING_DIMENSION) || (provider === 'gemini' ? 3072 : 1536),
+      providerUrl: process.env.EMBEDDING_API_URL || (provider === 'gemini' ? 'https://generativelanguage.googleapis.com/v1beta/models' : 'https://api.openai.com/v1/embeddings')
+    };
   }
 
   /**
@@ -28,41 +31,82 @@ class EmbeddingService {
     }
 
     try {
-      const response = await axios.post(
-        this.providerUrl,
-        {
-          input: texts,
-          model: this.model,
-        },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${apiKey}`,
-          },
-          timeout: 30000,
-        }
-      );
-
-      // OpenAI-compatible response format
-      // { data: [{ embedding: [...] }, ...] }
-      if (!response.data || !response.data.data) {
-        throw new Error('Invalid response from embedding provider');
+      if (this.config.provider === 'gemini') {
+        return await this.generateGeminiEmbeddings(texts, apiKey);
+      } else {
+        return await this.generateOpenAIEmbeddings(texts, apiKey);
       }
-
-      // Sort by index just in case and map to vector arrays
-      const embeddings = response.data.data
-        .sort((a, b) => a.index - b.index)
-        .map(item => item.embedding);
-        
-      if (embeddings.length > 0 && embeddings[0].length !== this.dimension) {
-        console.warn(`Warning: Expected embedding dimension ${this.dimension}, but got ${embeddings[0].length}`);
-      }
-
-      return embeddings;
     } catch (error) {
       console.error('Embedding Generation Error:', error.response?.data || error.message);
       throw new Error('Failed to generate embeddings');
     }
+  }
+
+  async generateGeminiEmbeddings(texts, apiKey) {
+    const { providerUrl, model, dimension } = this.config;
+    // Gemini batch endpoint
+    const url = `${providerUrl}/${model}:batchEmbedContents?key=${apiKey}`;
+    
+    // Create requests array
+    const requests = texts.map(text => ({
+      model: `models/${model}`,
+      content: { parts: [{ text }] }
+    }));
+
+    const response = await axios.post(
+      url,
+      { requests },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        timeout: 30000,
+      }
+    );
+
+    if (!response.data || !response.data.embeddings) {
+      throw new Error('Invalid response from Gemini embedding provider');
+    }
+
+    const embeddings = response.data.embeddings.map(e => e.values);
+
+    if (embeddings.length > 0 && embeddings[0].length !== dimension) {
+      console.warn(`Warning: Expected embedding dimension ${dimension}, but got ${embeddings[0].length}`);
+    }
+
+    return embeddings;
+  }
+
+  async generateOpenAIEmbeddings(texts, apiKey) {
+    const { providerUrl, model, dimension } = this.config;
+    const response = await axios.post(
+      providerUrl,
+      {
+        input: texts,
+        model: model,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${apiKey}`,
+        },
+        timeout: 30000,
+      }
+    );
+
+    if (!response.data || !response.data.data) {
+      throw new Error('Invalid response from OpenAI embedding provider');
+    }
+
+    const embeddings = response.data.data
+      .sort((a, b) => a.index - b.index)
+      .map(item => item.embedding);
+      
+    if (embeddings.length > 0 && embeddings[0].length !== dimension) {
+      console.warn(`Warning: Expected embedding dimension ${dimension}, but got ${embeddings[0].length}`);
+    }
+
+    return embeddings;
   }
 }
 
