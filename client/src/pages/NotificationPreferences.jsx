@@ -41,15 +41,15 @@ const NotificationPreferences = () => {
 
   if (isLoading) {
     return (
-      <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8 flex justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-primary-200 border-t-primary-600"></div>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8 text-center text-red-600">
+      <div className="text-center py-12 text-red-600">
         <p>Unable to load preferences.</p>
       </div>
     );
@@ -89,8 +89,8 @@ const NotificationPreferences = () => {
   ];
 
   return (
-    <div className="max-w-3xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-      <h1 className="text-2xl font-bold text-gray-900 mb-8">Notification Preferences</h1>
+    <div className="max-w-2xl">
+      <h1 className="text-2xl font-bold text-surface-900 tracking-tight mb-8">Notification Preferences</h1>
       
       <div className="bg-white shadow overflow-hidden sm:rounded-lg">
         <div className="px-4 py-5 sm:p-6 space-y-6">

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { activityService } from '../services/activityService';
+import useUIStore from '../store/uiStore';
 import { 
   CheckCircle, MessageSquare, AlertCircle, ArrowRight, UserPlus, Users, Briefcase, Code, GitPullRequest, GitCommit
 } from 'lucide-react';
@@ -141,6 +142,11 @@ const ProjectActivity = () => {
       }
     }
   }, [data, page]);
+
+  React.useEffect(() => {
+    // Clear unread activities when the user views the activity page
+    useUIStore.getState().clearUnreadActivity(projectId);
+  }, [projectId]);
 
   if (isLoading && page === 1) {
     return (

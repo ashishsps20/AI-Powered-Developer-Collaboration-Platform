@@ -61,10 +61,10 @@ const OrganizationInvitations = () => {
 
   if (currentRole && currentRole !== 'OWNER') {
     return (
-      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8 text-center">
-        <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Denied</h2>
-        <p className="text-gray-600 mb-6">You don't have permission to manage invitations.</p>
-        <Link to={`/app/org/${organizationId}/dashboard`} className="text-blue-600 hover:underline">
+      <div className="text-center py-16">
+        <h2 className="text-lg font-semibold text-surface-900 mb-2">Access Denied</h2>
+        <p className="text-sm text-surface-500 mb-6">You don't have permission to manage invitations.</p>
+        <Link to={`/app/org/${organizationId}/dashboard`} className="text-sm text-primary-600 hover:underline">
           Return to Dashboard
         </Link>
       </div>
@@ -72,18 +72,10 @@ const OrganizationInvitations = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Pending Invitations</h1>
-          <p className="text-sm text-gray-500 mt-1">Manage pending invitations for {currentOrganization?.name}</p>
-        </div>
-        <Link
-          to={`/app/org/${organizationId}/dashboard`}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-        >
-          Back to Dashboard
-        </Link>
+    <div>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-surface-900 tracking-tight">Invitations</h1>
+        <p className="text-sm text-surface-500 mt-1">Manage pending invitations for {currentOrganization?.name}</p>
       </div>
 
       {error && (

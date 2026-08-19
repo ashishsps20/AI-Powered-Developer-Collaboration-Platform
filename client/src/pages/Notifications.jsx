@@ -24,9 +24,9 @@ const Notifications = () => {
   const totalPages = data?.pagination?.totalPages || 1;
 
   return (
-    <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div>
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-4">
-        <h1 className="text-2xl font-bold text-gray-900">Notifications</h1>
+        <h1 className="text-2xl font-bold text-surface-900 tracking-tight">Notifications</h1>
         
         <div className="flex items-center gap-4">
           <Link 

@@ -3,7 +3,7 @@ import { Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SocketProvider } from './components/realtime/SocketProvider';
-import ApplicationShell from './layouts/ApplicationShell';
+import AppShell from './components/layout/AppShell';
 import Home from './pages/Home';
 
 import Register from './pages/Register';
@@ -68,8 +68,11 @@ function App() {
 
   if (!isInitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center bg-surface-50">
+        <div className="flex flex-col items-center gap-3">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-primary-200 border-t-primary-600"></div>
+          <p className="text-sm text-surface-500">Loading...</p>
+        </div>
       </div>
     );
   }
@@ -79,125 +82,72 @@ function App() {
       <ErrorBoundary>
         <SocketProvider>
           <Routes>
-            <Route path="/" element={<ApplicationShell />}>
-            <Route index element={<Home />} />
-            {/* Placeholder routes for future modules */}
-            <Route path="health-test" element={<Home />} />
-          </Route>
-          <Route path="/register" element={<Register />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/accept-invitation" element={<AcceptInvitation />} />
-          
-          {/* Protected Routes */}
-          <Route 
-            path="/onboarding" 
-            element={
-              <ProtectedRoute>
-                <Onboarding />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/onboarding/create-organization" 
-            element={
-              <ProtectedRoute>
-                <CreateOrganization />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/app" 
-            element={
-              <ProtectedRoute>
-                <WorkspaceSelection />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/app/org/:organizationId/dashboard" 
-            element={
-              <ProtectedRoute>
-                <OrganizationDashboard />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/app/org/:organizationId/members" 
-            element={
-              <ProtectedRoute>
-                <OrganizationMembers />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/app/org/:organizationId/invitations" 
-            element={
-              <ProtectedRoute>
-                <OrganizationInvitations />
-              </ProtectedRoute>
-            } 
-          />
-          <Route
-            path="/app/org/:organizationId/projects/:projectId"
-            element={
-              <ProtectedRoute>
-                <ProjectLayout />
-              </ProtectedRoute>
-            }
-          >
-            <Route index element={<ProjectDashboard />} />
-            <Route path="tasks" element={<ProjectTasks />} />
-            <Route path="issues" element={<ProjectIssues />} />
-            <Route path="activity" element={<ProjectActivity />} />
-            <Route path="members" element={<ProjectMembers />} />
-            <Route path="github" element={<ProjectGithub />} />
-            <Route path="knowledge" element={<ProjectKnowledge />} />
-            <Route path="knowledge/:documentId" element={<KnowledgeDocument />} />
-            <Route path="ai" element={<ProjectAI />} />
-          </Route>
-          <Route 
-            path="/app/invitations" 
-            element={
-              <ProtectedRoute>
-                <UserInvitations />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/settings/integrations" 
-            element={
-              <ProtectedRoute>
-                <Integrations />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/app/notifications" 
-            element={
-              <ProtectedRoute>
-                <Notifications />
-              </ProtectedRoute>
-            } 
-          />
-          <Route 
-            path="/app/settings/notifications" 
-            element={
-              <ProtectedRoute>
-                <NotificationPreferences />
-              </ProtectedRoute>
-            } 
-          />
-          
-          {/* Redirect all /app/* fallbacks to /app for workspace selection */}
-          <Route 
-            path="/app/*" 
-            element={
-              <ProtectedRoute>
-                <WorkspaceSelection />
-              </ProtectedRoute>
-            } 
-          />
-        </Routes>
+            {/* Public routes (no shell) */}
+            <Route path="/" element={<Home />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/accept-invitation" element={<AcceptInvitation />} />
+            
+            {/* Standalone protected routes (no shell) */}
+            <Route 
+              path="/onboarding" 
+              element={
+                <ProtectedRoute>
+                  <Onboarding />
+                </ProtectedRoute>
+              } 
+            />
+            <Route 
+              path="/onboarding/create-organization" 
+              element={
+                <ProtectedRoute>
+                  <CreateOrganization />
+                </ProtectedRoute>
+              } 
+            />
+
+            {/* AppShell-wrapped authenticated routes */}
+            <Route
+              element={
+                <ProtectedRoute>
+                  <AppShell />
+                </ProtectedRoute>
+              }
+            >
+              {/* Workspace selection */}
+              <Route path="/app" element={<WorkspaceSelection />} />
+              
+              {/* Organization level */}
+              <Route path="/app/org/:organizationId/dashboard" element={<OrganizationDashboard />} />
+              <Route path="/app/org/:organizationId/members" element={<OrganizationMembers />} />
+              <Route path="/app/org/:organizationId/invitations" element={<OrganizationInvitations />} />
+              
+              {/* Project level (with ProjectLayout for data-fetching) */}
+              <Route
+                path="/app/org/:organizationId/projects/:projectId"
+                element={<ProjectLayout />}
+              >
+                <Route index element={<ProjectDashboard />} />
+                <Route path="tasks" element={<ProjectTasks />} />
+                <Route path="issues" element={<ProjectIssues />} />
+                <Route path="activity" element={<ProjectActivity />} />
+                <Route path="members" element={<ProjectMembers />} />
+                <Route path="github" element={<ProjectGithub />} />
+                <Route path="knowledge" element={<ProjectKnowledge />} />
+                <Route path="knowledge/:documentId" element={<KnowledgeDocument />} />
+                <Route path="ai" element={<ProjectAI />} />
+              </Route>
+
+              {/* Global app pages */}
+              <Route path="/app/invitations" element={<UserInvitations />} />
+              <Route path="/settings/integrations" element={<Integrations />} />
+              <Route path="/app/notifications" element={<Notifications />} />
+              <Route path="/app/settings/notifications" element={<NotificationPreferences />} />
+              
+              {/* Fallback */}
+              <Route path="/app/*" element={<WorkspaceSelection />} />
+            </Route>
+          </Routes>
           <Toaster position="bottom-right" />
         </SocketProvider>
       </ErrorBoundary>

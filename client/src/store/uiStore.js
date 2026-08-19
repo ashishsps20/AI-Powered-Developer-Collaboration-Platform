@@ -34,6 +34,24 @@ const useUIStore = create((set) => ({
 
   selectedIssueId: null,
   setSelectedIssueId: (id) => set({ selectedIssueId: id }),
+
+  // Unread Activity Count
+  unreadActivities: {}, // { [projectId]: count }
+  
+  setUnreadActivityCount: (projectId, count) => set((state) => ({
+    unreadActivities: { ...state.unreadActivities, [projectId]: count }
+  })),
+  
+  incrementUnreadActivity: (projectId) => set((state) => ({
+    unreadActivities: { ...state.unreadActivities, [projectId]: (state.unreadActivities[projectId] || 0) + 1 }
+  })),
+  
+  clearUnreadActivity: (projectId) => {
+    localStorage.setItem(`lastSeenActivity_${projectId}`, new Date().toISOString());
+    set((state) => ({
+      unreadActivities: { ...state.unreadActivities, [projectId]: 0 }
+    }));
+  },
 }));
 
 export default useUIStore;

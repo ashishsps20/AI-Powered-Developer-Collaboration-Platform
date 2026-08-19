@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { useSocket } from '../components/realtime/SocketProvider';
+import useUIStore from '../store/uiStore';
 
 export const useProjectRealtime = (projectId) => {
   const { socket, connectionState } = useSocket();
@@ -31,6 +32,11 @@ export const useProjectRealtime = (projectId) => {
 
     const handleActivityNew = (data) => {
       queryClient.invalidateQueries(['project-activity', projectId]);
+      
+      // Increment unread count if we are not currently on the activity page
+      if (!window.location.pathname.endsWith('/activity')) {
+        useUIStore.getState().incrementUnreadActivity(projectId);
+      }
     };
 
     const handleCommentNew = (data) => {
